@@ -1,0 +1,107 @@
+.emailContainer {
+    color: #a0a0a0;
+    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+    font-size: 11px;
+    display: flex;
+}
+
+.emailWrapper {
+    flex: 1;
+    justify-content: start;
+    align-items: start;
+    width: 100%;
+    min-width: 240px;
+    height: 100%;
+    padding: 10px 6px 4px;
+    display: flex;
+}
+
+.emailInput {
+    background-color: #fff;
+    border: 1px solid #000;
+    flex-direction: column;
+    flex: 1;
+    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+    min-width: 240px;
+    min-height: 50px;
+    padding: 18px 1px 18px 17px;
+    display: flex;
+    overflow: hidden;
+}
+
+.emailInputContent {
+    width: 100%;
+    overflow: hidden;
+}
+
+.disclaimerContainer {
+    text-align: center;
+    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+    padding: 7px 0;
+    font-size: 8px;
+    display: flex;
+}
+
+.disclaimerWrapper {
+    width: 296px;
+    min-width: 240px;
+}
+
+.disclaimerContent {
+    width: 100%;
+    padding: 7px 0 2px;
+}
+
+.buttonContainer {
+    color: #fff;
+    text-align: center;
+    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+    font-size: 14px;
+    line-height: 1;
+    display: flex;
+}
+
+.buttonWrapper {
+    flex: 1;
+    justify-content: start;
+    align-items: end;
+    width: 100%;
+    min-width: 240px;
+    height: 100%;
+    padding: 10px 6px;
+    display: flex;
+}
+
+.joinButton {
+    background-color: #000;
+    flex-direction: column;
+    flex: 1;
+    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+    min-width: 240px;
+    min-height: 54px;
+    display: flex;
+    border: none;
+    cursor: pointer;
+    color: #fff;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.joinButton:hover {
+    background-color: #333;
+}
+
+.joinButton:focus {
+    outline: 2px solid #0066cc;
+    outline-offset: 2px;
+}

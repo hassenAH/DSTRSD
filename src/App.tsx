@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import { AnimatePresence, motion } from "framer-motion";
 import Home from "./pages/Home";
 import About from "./pages/About";
+import NavMenu from "./pages/menu/menu";
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -33,6 +34,7 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Router>
+      <NavMenu></NavMenu>
       <AnimatedRoutes />
     </Router>
   );
