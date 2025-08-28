@@ -1,26 +1,39 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import Home from "./pages/Home";
+import About from "./pages/About";
 
-function App() {
+function AnimatedRoutes() {
+  const location = useLocation();
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
+        <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
+      </Routes>
+    </AnimatePresence>
   );
 }
 
-export default App;
+function PageWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      className="h-screen flex items-center justify-center bg-gray-100"
+      initial={{ opacity: 0, x: 100 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -100 }}
+      transition={{ duration: 0.5 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <AnimatedRoutes />
+    </Router>
+  );
+}
