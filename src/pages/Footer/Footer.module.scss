@@ -1,0 +1,87 @@
+.footer {
+  width: 100%;
+  background-color: #000;
+  color: #fff;
+  padding: 40px 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  max-width: 900px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.formContainer {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  justify-content: center;
+  flex-wrap: wrap; 
+}
+
+.heading {
+  font-family: "Clash Display", sans-serif;
+  font-weight: 400; 
+  font-size: 18px;
+  margin: 0;
+}
+
+.inputWrapper,
+.buttonWrapper {
+  height: 40px;
+  min-width: 169px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .formContainer {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .heading {
+    text-align: center;
+    font-size: 16px;
+  }
+
+  .inputWrapper,
+  .buttonWrapper {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+.copyrightContainer {
+  width: 100%;
+  background-color: #fff; 
+  display: flex;
+  justify-content: center;
+  padding: 18px 0;
+}
+
+.container {
+  max-width: 900px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.copyrightText {
+  display: flex;         
+  align-items: center;   
+  gap: 2px;              
+  font-family: "Clash Display", sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: #000;
+}
+
+.boldText {
+  font-weight: 700;     
+}

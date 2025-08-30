@@ -1,0 +1,79 @@
+.sizeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.sizeLabel {
+  color: #b9bbbf;
+  font: 500 16px "Inter", sans-serif;
+}
+
+.sizeOptions {
+  display: flex;
+  flex-wrap: wrap; 
+  gap: 11px;
+}
+
+.sizeOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background-color: #f3f3f3;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: #e0e0e0;
+  }
+}
+
+.radioButton {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid #726c6c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.radioButtonSelected {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #000;
+}
+
+.radioButtonBorder {
+  border: 1px solid #000;
+  border-radius: 32px;
+  width: 16px;
+  height: 16px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.radioButtonBorderUnselected {
+  border: 1px solid #726c6c;
+  border-radius: 32px;
+  width: 16px;
+  height: 16px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.sizeText {
+  font: 500 14px "Clash Display", sans-serif;
+  color: #000;
+}
+
+.sizeTextUnselected {
+  color: #726c6c;
+}

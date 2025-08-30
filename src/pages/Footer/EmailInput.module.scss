@@ -1,0 +1,35 @@
+.form {
+  justify-content: start;
+  align-items: end;
+  display: flex;
+}
+
+.inputWrapper {
+  width: 169px;
+  min-width: 169px;
+  padding: 1px 0 5px;
+  overflow: hidden;
+}
+
+.inputContainer {
+  width: 100%;
+  overflow: hidden;
+}
+
+.input {
+  background: transparent;
+  border: none;
+  color: #fcfcfc;
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+  width: 100%;
+  border-bottom: 1px solid #fcfcfc;
+  padding: 0 8px;
+}
+
+
+.input::placeholder {
+  color: #fcfcfc;
+  opacity: 0.8;
+}

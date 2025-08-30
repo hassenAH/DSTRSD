@@ -1,0 +1,69 @@
+.imageSection {
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto 2rem auto; 
+
+  @media (max-width: 991px) {
+    max-width: 100%;
+    margin: 0 auto 1.5rem auto;
+  }
+}
+
+.imageContainer,
+.imageWrapper,
+.imageBorder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.imageFrame {
+  width: 100%;
+  aspect-ratio: 1 / 1; 
+  position: relative;
+}
+
+.productImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; 
+  position: relative; 
+}
+
+/* Badges */
+.onlineExclusiveBadge,
+.newBadge {
+  position: absolute;
+  top: 3px;
+}
+
+.onlineExclusiveBadge {
+  right: 2px;
+}
+
+.newBadge {
+  left: 2px;
+}
+
+.badgeBackground,
+.newBadgeBackground {
+  background-color: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 8px;
+}
+
+.onlineExclusiveText,
+.newText {
+  color: #fff;
+  font: 400 10px "Clash Display", sans-serif;
+  text-align: center;
+}

@@ -1,0 +1,41 @@
+.buttonWrapper {
+  text-align: center;
+  text-transform: uppercase;
+  padding-left: 7px;
+  line-height: 1.4;
+    font-size: inherit;
+
+}
+
+.button {
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  background: transparent;
+  border: none;
+  color: #fcfcfc;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  text-transform: uppercase;
+  border-bottom: 1px solid #fcfcfc;
+  padding: 0 8px;
+  height: 100%; 
+    opacity: 0.8;
+
+}
+
+
+
+.buttonContent {
+  flex-direction: column;
+  justify-content: start;
+  align-self: stretch;
+  align-items: center;
+  min-width: 100px;
+  margin: auto 0;
+  display: flex;
+    color: #fcfcfc;
+  font-family: inherit;
+  font-size: inherit;
+}

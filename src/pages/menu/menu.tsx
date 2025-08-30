@@ -24,7 +24,7 @@ function NavMenu() {
           <ul className={styles.navLinks}>
             <li><a href="#">Shop</a></li>
             <li><a href="#">Archive</a></li>
-            <li><a href="#">About Us</a></li>
+            <li><a href="/about">About Us</a></li>
           </ul>
 
           {/* Icons + Burger */}

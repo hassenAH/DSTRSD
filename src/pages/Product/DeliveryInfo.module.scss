@@ -1,0 +1,54 @@
+.deliverySection {
+  border: 1px solid #e4e4e4;
+  flex-direction: column;
+  align-self: stretch;
+  align-items: flex-start;
+  gap: 21px;
+  padding: 17px;
+  display: flex;
+  position: relative;
+
+  @media (max-width: 640px) {
+    padding: 12px;
+  }
+}
+
+.deliveryContent {
+  align-self: stretch;
+  align-items: flex-start;
+  gap: 14px;
+  display: flex;
+  position: relative;
+}
+
+.deliveryInfo {
+  flex-direction: column;
+  flex: 1 0 0;
+  align-items: flex-start;
+  gap: 7px;
+  display: flex;
+  position: relative;
+}
+
+.deliveryTitle {
+  color: #000012;
+  align-self: stretch;
+  font: 700 17px "Clash Display", sans-serif;
+  position: relative;
+}
+
+.deliveryDescription {
+  color: #726c6c;
+  text-decoration: underline;
+  text-decoration-skip-ink: none;
+  align-self: stretch;
+  font: 400 14px "Clash Display", sans-serif;
+  position: relative;
+}
+
+.deliveryIcon {
+  width: 45px;
+  height: 45px;
+  aspect-ratio: 1/1;
+  position: relative;
+}

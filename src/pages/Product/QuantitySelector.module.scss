@@ -1,0 +1,47 @@
+.quantitySelector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 169px;
+  height: 59px;
+  background-color: #f3f3f3;
+  padding: 0 16px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  
+  @media (max-width: 640px) {
+    width: 100%; 
+  }
+}
+
+.quantityMinus,
+.quantityPlus {
+  font: 700 18px "Inter", sans-serif;
+  cursor: pointer;
+  user-select: none;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.quantityMinus {
+  color: #a3a3a3;
+}
+
+.quantityPlus {
+  color: #000;
+}
+
+.quantityValue {
+  font: 700 22px "Inter", sans-serif;
+  color: #000;
+  text-align: center;
+  flex: 1; 
+}
