@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import Popup from "./components/Popup";
+import Popup from "./components/popup/Popup";
 
 export default function About() {
   return (

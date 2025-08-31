@@ -26,7 +26,7 @@ export default function ProductInfo({
   description,
   sizes,
 }: ProductInfoProps) {
-  const [selectedSize, setSelectedSize] = useState(sizes[0] ?? "");
+  const [selectedSize, setSelectedSize] = useState(sizes[0]);
   const [quantity, setQuantity] = useState(1);
 
   const handleBuyNow = () => {

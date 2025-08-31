@@ -4,16 +4,23 @@ import Home from "./pages/Home";
 import About from "./pages/About";
 import NavMenu from "./pages/menu/menu";
 
+import ProductsPage from "./pages/ProductsList/ProductList";
+import AccessoriesPage from "./pages/ProductsList/EmptyPage";
+import { CartProvider } from "./utils/CartContext";
 function AnimatedRoutes() {
   const location = useLocation();
 
   return (
+
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
+        <Route path="/products" element={<ProductsPage />} />
         <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
+        <Route path="/products/accessories" element={<AccessoriesPage />} />
       </Routes>
     </AnimatePresence>
+
   );
 }
 
@@ -34,8 +41,10 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Router>
-      <NavMenu></NavMenu>
-      <AnimatedRoutes />
+      <CartProvider>
+        <NavMenu></NavMenu>
+        <AnimatedRoutes />
+      </CartProvider>
     </Router>
   );
 }

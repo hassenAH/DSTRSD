@@ -1,30 +1,49 @@
+/* Header wrapper */
 .header {
-  background-color: #fff;
+  background: #fff;
   border-bottom: 1px solid #eee;
+  position: sticky;
+  /* stays visible on scroll */
+  top: 0;
+  z-index: 40;
 }
 
+/* Top nav bar */
 .navbar {
   max-width: 1433px;
   margin: 0 auto;
-  padding: 12px 16px;
+  padding: clamp(10px, 2.5vw, 12px) clamp(12px, 3vw, 16px);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
 
-.logo img {
-  width: 130px;
-  height: auto;
+/* Left cluster: logo + links */
+.logoNav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-  @media (max-width: 640px) {
-    width: 100px;
+.logo {
+  display: inline-flex;
+  align-items: center;
+
+  img {
+    display: block;
+    max-height: 28px;
+    /* keeps header compact */
+    width: auto;
   }
 }
 
+/* Desktop links */
 .navLinks {
   display: flex;
-  gap: 24px;
+  gap: 12px;
   list-style: none;
+  margin-left: 8px;
 
   li a {
     text-decoration: none;
@@ -32,10 +51,16 @@
     font-family: "Clash Display", sans-serif;
     font-size: 14px;
     font-weight: 400;
-    transition: color 0.2s ease;
+    letter-spacing: .01em;
+    transition: color .18s ease;
 
     &:hover {
       color: #666;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #000;
+      outline-offset: 2px;
     }
   }
 
@@ -44,6 +69,7 @@
   }
 }
 
+/* Right cluster: icons + burger */
 .actions {
   display: flex;
   align-items: center;
@@ -59,15 +85,64 @@
   }
 }
 
+/* Icon button (can host badge) */
 .iconBtn {
-  background: none;
-  border: none;
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 0;
   cursor: pointer;
-  padding: 6px;
-  font-size: 20px;
+  transition: opacity .18s ease;
+
+  &:hover {
+    opacity: .85;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #000;
+    outline-offset: 2px;
+  }
+
+  svg {
+    display: block;
+  }
 }
 
-/* Burger */
+/* Cart-specific with badge */
+.cartBtn {
+  position: relative;
+}
+
+.cartBadge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: #090909;
+  color: #fff;
+  border: 1px solid #090909;
+  /* sharp corners */
+  border-radius: 0;
+  font: 700 11px/18px system-ui, sans-serif;
+  text-align: center;
+  transform: scale(.8);
+  opacity: 0;
+  transition: transform .18s ease, opacity .18s ease;
+  pointer-events: none;
+}
+
+.cartBadge__visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Burger (mobile) */
 .burger {
   display: none;
   flex-direction: column;
@@ -83,54 +158,82 @@
     height: 2px;
     width: 100%;
     background: #000;
-    border-radius: 2px;
   }
 
   @media (max-width: 640px) {
     display: flex;
   }
+
+  &:focus-visible {
+    outline: 2px solid #000;
+    outline-offset: 2px;
+  }
 }
 
-/* Mobile menu */
+/* Mobile dropdown */
 .mobileMenu {
   background: #fff;
   border-top: 1px solid #eee;
-  padding: 20px 16px;
-  animation: slideDown 0.3s ease forwards;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  transform-origin: top;
+  animation: slideDown .24s ease forwards;
+
+  /* row with mobile-only icons if you add them later */
+  .mobileIcons {
+    display: flex;
+    gap: 20px;
+
+    button {
+      width: 36px;
+      height: 36px;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+
+      &:hover {
+        opacity: .85;
+      }
+    }
+  }
 
   ul {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    margin-top: 16px;
+    gap: 10px;
+    margin-top: 6px;
 
-    li a {
+    li a,
+    li button.mobileLink {
+      appearance: none;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      text-align: left;
       text-decoration: none;
       color: #000;
       font-family: "Clash Display", sans-serif;
       font-size: 18px;
       font-weight: 500;
-      letter-spacing: 0.5px;
-      transition: color 0.2s ease;
+      letter-spacing: .5px;
+      cursor: pointer;
+      transition: color .18s ease;
 
       &:hover {
         color: #666;
+      }
+
+      &:focus-visible {
+        outline: 2px solid #000;
+        outline-offset: 2px;
       }
     }
   }
 }
 
-.mobileIcons {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 12px;
-
-  button {
-    font-size: 22px;
-  }
-}
-
+/* Slide animation */
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -140,5 +243,15 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+
+  .iconBtn,
+  .mobileMenu {
+    animation: none !important;
+    transition: none !important;
   }
 }

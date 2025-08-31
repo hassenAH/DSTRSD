@@ -1,0 +1,227 @@
+:root {
+    --bg: #f9fafb;
+    --ink: #090909;
+    --muted: rgba(9, 9, 9, 0.65);
+    --subtle: rgba(9, 9, 9, 0.08);
+    --ring: rgba(9, 9, 9, 0.5);
+    --accent: #111827;
+    --white: #ffffff;
+}
+
+.page {
+    min-height: 100dvh;
+    background: var(--bg);
+    color: var(--ink);
+    display: grid;
+    grid-template-rows: auto 1fr;
+}
+
+/* ---------- HERO (empty state) ---------- */
+.hero {
+    padding: 3.5rem 1.25rem 2rem;
+    text-align: center;
+    max-width: 920px;
+    margin-inline: auto;
+
+    &__icon {
+        --size: 86px;
+        width: var(--size);
+        height: var(--size);
+        margin: 0 auto 1rem;
+        position: relative;
+        background: radial-gradient(60% 60% at 50% 45%, #ffffff 0%, #eef2ff 60%, #e5e7eb 100%);
+        box-shadow:
+            0 10px 30px rgba(0, 0, 0, 0.06),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+
+        /* plus icon */
+        &::before,
+        &::after {
+            content: "";
+            position: absolute;
+            background: #9ca3af;
+        }
+
+        &::before {
+            width: 36px;
+            height: 6px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        &::after {
+            width: 6px;
+            height: 36px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+    }
+
+    &__title {
+        font-family: 'Clash Display', system-ui, sans-serif;
+        font-size: clamp(1.75rem, 6vw, 3rem);
+        font-weight: 600;
+        letter-spacing: .02em;
+        margin: .25rem 0 .5rem;
+        line-height: 1.05;
+    }
+
+    &__subtitle {
+        font-size: 1rem;
+        color: var(--muted);
+        max-width: 48ch;
+        margin: 0 auto 1.25rem;
+    }
+
+    &__ctaRow {
+        display: flex;
+        gap: .75rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+}
+
+/* Buttons */
+.btnPrimary,
+.btnGhost {
+    appearance: none;
+    border: 1px solid var(--subtle);
+    padding: .65rem 1rem;
+    font: 600 .95rem/1.1 system-ui, sans-serif;
+    letter-spacing: .01em;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease, color .18s ease, border-color .18s ease;
+}
+
+.btnPrimary {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+
+    &:hover {
+        transform: translateY(-1px);
+    }
+}
+
+.btnGhost {
+    background: var(--white);
+    color: var(--ink);
+
+    &:hover {
+        background: #f3f4f6;
+    }
+}
+
+/* Notify form */
+.notify {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .5rem;
+    max-width: 520px;
+    margin: .5rem auto 0;
+
+    &__input {
+        border: 1px solid var(--subtle);
+        background: #fff;
+        padding: .7rem 1rem;
+        font: 500 0.95rem/1.1 system-ui, sans-serif;
+        color: var(--ink);
+        outline: none;
+        transition: box-shadow .18s ease, border-color .18s ease;
+
+        &:focus {
+            border-color: var(--ink);
+            box-shadow: 0 0 0 2px var(--ring);
+        }
+    }
+
+    &__btn {
+        border: 1px solid var(--ink);
+        background: var(--ink);
+        color: #fff;
+        padding: .7rem 1rem;
+        font: 600 .95rem/1.1 system-ui, sans-serif;
+        cursor: pointer;
+        transition: transform .18s ease, background-color .18s ease;
+
+        &:hover {
+            transform: translateY(-1px);
+        }
+    }
+}
+
+/* ---------- Recommendations ---------- */
+.recs {
+    padding: 1.25rem;
+
+    &__head {
+        max-width: 1200px;
+        margin: 0 auto .75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: .75rem;
+    }
+
+    &__title {
+        font-family: 'Clash Display', system-ui, sans-serif;
+        font-size: clamp(1.125rem, 3.2vw, 1.5rem);
+        font-weight: 600;
+        letter-spacing: .01em;
+    }
+
+    &__count {
+        font-size: .85rem;
+        color: var(--muted);
+    }
+
+    &__grid {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: .9rem;
+
+        @media (min-width: 768px) {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        @media (min-width: 1280px) {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+}
+
+.cardWrap {
+    transition: transform .18s ease, box-shadow .18s ease;
+    cursor: pointer;
+
+    &:hover {
+        transform: translateY(-2px);
+    }
+
+    :global(img),
+    :global(.card-media) {
+        aspect-ratio: 1 / 1;
+        width: 100%;
+        object-fit: cover;
+        display: block;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+
+    .btnPrimary,
+    .btnGhost,
+    .notify__input,
+    .notify__btn,
+    .cardWrap {
+        transition: none !important;
+    }
+}

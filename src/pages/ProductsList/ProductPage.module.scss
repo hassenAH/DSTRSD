@@ -1,0 +1,275 @@
+/* Design tokens */
+:root {
+    --bg: #f9fafb;
+    --ink: #090909;
+    --muted: rgba(9, 9, 9, 0.6);
+    --chip-bg: #ffffff;
+    --chip-active: #090909;
+    --chip-border: rgba(9, 9, 9, 0.08);
+    --seg-bg: #ffffff;
+    --seg-thumb: #0f172a10;
+    --ring: rgba(9, 9, 9, 0.5);
+    --safe-top: env(safe-area-inset-top, 0px);
+}
+
+.productPage {
+    min-height: 100dvh;
+    background: var(--bg);
+    color: var(--ink);
+    padding-bottom: clamp(2rem, 6vw, 3.5rem);
+}
+
+/* Sticky header */
+.mobileBar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    backdrop-filter: saturate(1.4) blur(10px);
+    background: color-mix(in oklab, var(--bg) 85%, white);
+    border-bottom: 1px solid var(--chip-border);
+    padding: calc(0.5rem + var(--safe-top)) clamp(.75rem, 4vw, 1rem) .75rem;
+
+    &__titleRow {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: .75rem;
+        margin-bottom: .5rem;
+    }
+}
+
+.title {
+    font-family: 'Clash Display', system-ui, sans-serif;
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: .02em;
+    font-size: clamp(1.125rem, 6vw, 2rem);
+}
+
+.counter {
+    font-size: clamp(.72rem, 2.3vw, .8rem);
+    color: var(--muted);
+}
+
+/* Category chips (horizontal scroll) */
+.categoryChips {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    gap: .5rem;
+    overflow-x: auto;
+    padding: .25rem 0 .5rem;
+    margin: 0 -.5rem .5rem;
+    padding-inline: .5rem;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+.chip {
+    scroll-snap-align: start;
+    border: 1px solid var(--chip-border);
+    background: var(--chip-bg);
+    /* sharp corners */
+    border-radius: 0;
+    padding: .5rem .9rem;
+    min-height: 44px;
+    /* thumb-friendly */
+    font-family: 'Clash Display', system-ui, sans-serif;
+    font-size: clamp(.85rem, 3.2vw, .95rem);
+    line-height: 1;
+    letter-spacing: .01em;
+    white-space: nowrap;
+    transition: transform .18s ease, background-color .18s ease, color .18s ease, border-color .18s ease;
+    touch-action: manipulation;
+
+    &:active {
+        transform: scale(.98);
+    }
+}
+
+.chip__active {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+}
+
+/* Segmented control */
+.segmented {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: var(--seg-bg);
+    border: 1px solid var(--chip-border);
+    border-radius: 0;
+    /* sharp */
+    padding: .25rem;
+    overflow: hidden;
+}
+
+.segment {
+    position: relative;
+    z-index: 1;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    border-radius: 0;
+    /* sharp */
+    padding: .5rem .25rem;
+    min-height: 44px;
+    font: 500 clamp(.82rem, 3vw, .9rem)/1 'Clash Display', system-ui, sans-serif;
+    letter-spacing: .02em;
+    color: var(--muted);
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.segment__active {
+    color: var(--ink);
+}
+
+.segmented__thumb {
+    position: absolute;
+    inset: .25rem auto .25rem .25rem;
+    width: calc((100% - .5rem) / 3);
+    border-radius: 0;
+    /* sharp */
+    background: var(--seg-thumb);
+    transition: transform .25s ease;
+    will-change: transform;
+}
+
+.segmented__thumb[data-pos="featured"] {
+    transform: translateX(0%);
+}
+
+.segmented__thumb[data-pos="newest"] {
+    transform: translateX(100%);
+}
+
+.segmented__thumb[data-pos="size"] {
+    transform: translateX(200%);
+}
+
+/* SIZE sub-filter (SMALL / MEDIUM / LARGE) */
+.sizeBar {
+    display: flex;
+    justify-content: center;
+    gap: .5rem;
+    margin-top: .75rem;
+    padding: 0 .5rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+.sizeBtn {
+    border: 1px solid var(--chip-border);
+    background: var(--chip-bg);
+    border-radius: 0;
+    /* sharp */
+    padding: .5rem .9rem;
+    min-height: 44px;
+    font-family: 'Clash Display', sans-serif;
+    font-size: clamp(.82rem, 3vw, .9rem);
+    font-weight: 500;
+    color: var(--muted);
+    transition: background-color .2s ease, color .2s ease, border-color .2s ease, transform .2s ease;
+    cursor: pointer;
+    white-space: nowrap;
+    touch-action: manipulation;
+
+    &:hover {
+        background: #f3f4f6;
+    }
+}
+
+.sizeBtn__active {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+}
+
+/* Grid */
+.grid {
+    padding: clamp(.75rem, 3vw, 1rem);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(.75rem, 2.8vw, .9rem);
+
+    @media (min-width: 480px) {
+        gap: 1rem;
+    }
+
+    @media (min-width: 1024px) {
+        padding: clamp(1rem, 3vw, 1.5rem) clamp(1.25rem, 4vw, 2rem) clamp(1.25rem, 4vw, 2rem);
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem 1.25rem;
+        max-width: 1200px;
+        margin-inline: auto;
+    }
+
+    @media (min-width: 1280px) {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Card wrapper around ProductCard */
+.cardWrap {
+    border-radius: 0;
+    /* sharp */
+    transition: transform .18s ease, box-shadow .18s ease;
+    cursor: pointer;
+
+    &:hover {
+        transform: translateY(-2px);
+    }
+
+    :global(img),
+    :global(.card-media) {
+        aspect-ratio: 1 / 1;
+        width: 100%;
+        object-fit: cover;
+        border-radius: 0;
+        /* sharp */
+        display: block;
+    }
+}
+
+.cardWrap__selected {
+    box-shadow: 0 0 0 2px var(--ring);
+    transform: translateY(-1px);
+}
+
+/* Tighten on very small screens */
+@media (max-width: 360px) {
+
+    .chip,
+    .sizeBtn,
+    .segment {
+        padding: .45rem .7rem;
+        min-height: 40px;
+    }
+
+    .grid {
+        gap: .65rem;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+
+    .chip,
+    .segment,
+    .segmented__thumb,
+    .sizeBtn,
+    .cardWrap {
+        transition: none !important;
+    }
+}
