@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ add navigation
 import styles from "./Cart.module.scss";
 
 export type CartItem = {
@@ -37,6 +38,7 @@ export default function Cart({
 }: CartProps) {
     const panelRef = useRef<HTMLDivElement>(null);
     const prevActiveRef = useRef<HTMLElement | null>(null);
+    const navigate = useNavigate(); // ✅
 
     // Totals
     const { subtotal, tax, total } = useMemo(() => {
@@ -52,7 +54,6 @@ export default function Cart({
         if (isOpen) {
             prevActiveRef.current = (document.activeElement as HTMLElement) ?? null;
             body.style.overflow = "hidden";
-            // focus panel
             setTimeout(() => panelRef.current?.focus(), 0);
         } else {
             body.style.overflow = "";
@@ -71,6 +72,22 @@ export default function Cart({
     }, [isOpen, onClose]);
 
     const fmt = (n: number) => `${n.toFixed(2)} ${currency}`;
+
+    // ✅ Helpers that navigate
+    const goToProducts = () => {
+        onClose();
+        navigate("/products");
+    };
+
+    const handleCheckout = () => {
+        const summary = { subtotal, tax, shipping, total, items };
+        if (onCheckout) {
+            onCheckout(summary);
+        } else {
+            // Pass summary to the checkout page via route state (optional to use there)
+            navigate("checkout", { state: summary });
+        }
+    };
 
     return (
         <div className={`${styles.cart} ${isOpen ? styles.open : ""}`} aria-hidden={!isOpen}>
@@ -100,7 +117,9 @@ export default function Cart({
                         <div className={styles.empty}>
                             <p className={styles.emptyTitle}>Your bag is empty</p>
                             <p className={styles.emptySub}>Add products to see them here.</p>
-                            <button className={styles.browse} onClick={onClose}>Continue shopping</button>
+                            <button className={styles.browse} onClick={goToProducts}>
+                                Continue shopping
+                            </button>
                         </div>
                     ) : (
                         <ul className={styles.list}>
@@ -182,7 +201,7 @@ export default function Cart({
                     <button
                         className={styles.checkout}
                         disabled={items.length === 0}
-                        onClick={() => onCheckout?.({ subtotal, tax, shipping, total, items })}
+                        onClick={handleCheckout} // ✅ navigate or callback
                     >
                         Checkout
                     </button>
