@@ -5,53 +5,61 @@
   padding: 40px 20px;
   display: flex;
   justify-content: center;
+  flex-direction: column;
+  /* mobile-first stacking */
+  box-sizing: border-box;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    justify-content: center;
+    padding: 40px 40px;
+  }
 }
 
 .container {
-  max-width: 900px;
   width: 100%;
+  max-width: 900px;
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
+  box-sizing: border-box;
 }
 
 .formContainer {
   display: flex;
   align-items: center;
-  gap: 25px;
   justify-content: center;
-  flex-wrap: wrap; 
+  gap: 25px;
+  flex-wrap: wrap;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
 }
 
 .heading {
   font-family: "Clash Display", sans-serif;
-  font-weight: 400; 
+  font-weight: 400;
   font-size: 18px;
   margin: 0;
+  text-align: center;
+
+  @media (max-width: 640px) {
+    font-size: 16px;
+  }
 }
 
 .inputWrapper,
 .buttonWrapper {
-  height: 40px;
-  min-width: 169px;
   display: flex;
   align-items: center;
   justify-content: center;
-}
+  height: 40px;
+  min-width: 169px;
 
-@media (max-width: 640px) {
-  .formContainer {
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .heading {
-    text-align: center;
-    font-size: 16px;
-  }
-
-  .inputWrapper,
-  .buttonWrapper {
+  @media (max-width: 640px) {
     width: 100%;
     min-width: 0;
   }
@@ -59,29 +67,24 @@
 
 .copyrightContainer {
   width: 100%;
-  background-color: #fff; 
+  background-color: #fff;
   display: flex;
   justify-content: center;
   padding: 18px 0;
-}
-
-.container {
-  max-width: 900px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
+  box-sizing: border-box;
 }
 
 .copyrightText {
-  display: flex;         
-  align-items: center;   
-  gap: 2px;              
+  display: flex;
+  align-items: center;
+  gap: 2px;
   font-family: "Clash Display", sans-serif;
   font-size: 15px;
   font-weight: 400;
   color: #000;
-}
+  text-align: center;
 
-.boldText {
-  font-weight: 700;     
+  .boldText {
+    font-weight: 700;
+  }
 }

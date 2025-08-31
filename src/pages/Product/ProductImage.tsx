@@ -1,7 +1,10 @@
+"use client";
+import { useState } from "react";
 import styles from './ProductImage.module.scss';
 
 interface ProductImageProps {
-  src: string;
+  src: string;             // default image
+  hoverSrc?: string;       // optional hover image
   alt: string;
   showOnlineExclusive?: boolean;
   showNew?: boolean;
@@ -9,19 +12,29 @@ interface ProductImageProps {
 
 export default function ProductImage({
   src,
+  hoverSrc,
   alt,
   showOnlineExclusive = false,
   showNew = false,
 }: ProductImageProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
     <section className={styles.imageSection}>
       <div className={styles.imageContainer}>
-        <div className={styles.imageWrapper}>
+        <div
+          className={styles.imageWrapper}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
           <div className={styles.imageBorder}>
             <div className={styles.imageFrame}>
-              <img src={src} alt={alt} className={styles.productImage} />
+              <img
+                src={isHovered && hoverSrc ? hoverSrc : src}
+                alt={alt}
+                className={styles.productImage}
+              />
 
-              {}
               {showOnlineExclusive && (
                 <div className={styles.onlineExclusiveBadge}>
                   <div className={styles.badgeBackground}>
@@ -38,7 +51,6 @@ export default function ProductImage({
                 </div>
               )}
 
-              {}
               {showNew && (
                 <div className={styles.newBadge}>
                   <div className={styles.newBadgeBackground}>

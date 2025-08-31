@@ -1,4 +1,9 @@
 .homeContainer {
   display: flex;
-  flex-direction: column; 
+  flex-direction: column;
+  width: 100vw; // full viewport width
+  min-height: 100vh; // optional: full viewport height
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }

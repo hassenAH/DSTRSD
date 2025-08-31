@@ -1,4 +1,4 @@
-"use client";
+
 import * as React from "react";
 import styles from "./Footer.module.scss";
 import EmailInput from "./EmailInput";
@@ -43,7 +43,6 @@ export default function Footer() {
         </div>
       </footer>
 
-      
       <div className={styles.copyrightContainer}>
         <div className={styles.container}>
           <p className={styles.copyrightText}>

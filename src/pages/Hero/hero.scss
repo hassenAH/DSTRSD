@@ -1,11 +1,15 @@
 .hero {
   position: relative;
-  width: 100%;
-  height: 100vh; // Full screen height
-  overflow: hidden;
+  width: 100vw; // full viewport width
+  height: 100vh; // full viewport height
+  overflow: hidden; // hide overflow content
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-direction: column; // optional, for stacking children
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 
   &__video {
     position: absolute;

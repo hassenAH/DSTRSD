@@ -18,7 +18,7 @@ function SignUpButton({ onClick, disabled = false }: SignUpButtonProps) {
         aria-label="Sign up for newsletter"
       >
         <div className={styles.buttonContent}>
-          <span>sign up→</span>
+          <span>sign up →</span>
         </div>
       </button>
     </div>
