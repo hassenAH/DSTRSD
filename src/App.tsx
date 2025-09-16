@@ -8,6 +8,9 @@ import ProductsPage from "./pages/ProductsList/ProductList";
 import AccessoriesPage from "./pages/ProductsList/EmptyPage";
 import { CartProvider } from "./utils/CartContext";
 import CheckoutPage from "./pages/Checkout/CheckoutPage";
+import SignInPage from "./pages/SignIn/SignIn";
+
+
 function AnimatedRoutes() {
   const location = useLocation();
 
@@ -20,6 +23,8 @@ function AnimatedRoutes() {
         <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
         <Route path="/products/accessories" element={<AccessoriesPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/login" element={<SignInPage />} />
+
 
       </Routes>
     </AnimatePresence>
