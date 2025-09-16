@@ -15,7 +15,7 @@ type CartState = {
     isOpen: boolean;
 };
 
-type AddPayload = CartItem & { merge?: boolean }; // merge=true to sum qty for same id+size
+type AddPayload = CartItem & { merge?: boolean };
 type UpdateQtyPayload = { id: CartItem["id"]; size?: string; qty: number };
 type RemovePayload = { id: CartItem["id"]; size?: string };
 
@@ -45,7 +45,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
             const idx = state.items.findIndex((it) => sameLine(it, item));
             if (idx >= 0) {
-                const copy = state.items.slice();
+                const copy = [...state.items];
                 copy[idx] = { ...copy[idx], qty: copy[idx].qty + item.qty };
                 return { ...state, items: copy, isOpen: true };
             }
@@ -100,26 +100,24 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-    const [state, dispatch] = useReducer(cartReducer, initialState);
-
-    // hydrate from localStorage once
-    useEffect(() => {
+    const [state, dispatch] = useReducer(cartReducer, initialState, (init) => {
         try {
             const raw = localStorage.getItem(KEY);
             if (raw) {
                 const parsed = JSON.parse(raw) as CartState;
                 if (parsed && Array.isArray(parsed.items)) {
-                    dispatch({ type: "HYDRATE", payload: { items: parsed.items, isOpen: false } });
+                    return { ...init, items: parsed.items };
                 }
             }
-        } catch { }
-    }, []);
+        } catch {}
+        return init;
+    });
 
     // persist items (not isOpen) to localStorage
     useEffect(() => {
         try {
-            localStorage.setItem(KEY, JSON.stringify({ items: state.items, isOpen: false }));
-        } catch { }
+            localStorage.setItem(KEY, JSON.stringify({ items: state.items }));
+        } catch {}
     }, [state.items]);
 
     const count = useMemo(() => state.items.reduce((n, it) => n + it.qty, 0), [state.items]);

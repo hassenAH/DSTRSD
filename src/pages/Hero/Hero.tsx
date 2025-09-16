@@ -10,7 +10,18 @@ interface HeroProps {
 const Hero: React.FC<HeroProps> = ({ videoSrc, title, description }) => {
   return (
     <div className="hero">
-      <video className="hero__video" autoPlay loop muted playsInline>
+      <video 
+        className="hero__video" 
+        autoPlay 
+        loop 
+        muted 
+        playsInline
+        preload="auto" 
+        onLoadedData={(e) => {
+          const video = e.target as HTMLVideoElement;
+          video.controls = false;
+        }}
+      >
         <source src={videoSrc} type="video/mp4" />
         Your browser does not support the video tag.
       </video>

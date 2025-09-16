@@ -45,7 +45,6 @@
     margin: 0 auto;
   }
 
-  // Optional: dark overlay for better text readability
   &::after {
     content: "";
     position: absolute;
@@ -56,4 +55,8 @@
     background: rgba(0, 0, 0, 0.4);
     z-index: 1;
   }
+}
+
+video::-webkit-media-controls {
+  display: none !important;
 }
