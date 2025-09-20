@@ -2,12 +2,13 @@ import React, { useMemo, useState } from "react";
 import styles from "./menu.module.scss";
 import Cart, { CartItem } from "../Cart/Cart";
 import { useCart } from "../../utils/CartContext";
+import { useNavigate } from "react-router-dom";
 // <-- adjust path if needed
 
 function NavMenu() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { count, openCart, items, updateQty, removeFromCart, closeCart, isOpen, subtotal } = useCart();
-
+  const navigate = useNavigate(); // 
   return (
     <>
       <link
@@ -34,7 +35,9 @@ function NavMenu() {
           <div className={styles.actions}>
             {/* Desktop Icons */}
             <div className={styles.icons}>
-              <button aria-label="Account" className={styles.iconBtn}>
+              <button aria-label="Account" className={styles.iconBtn} 
+              onClick={() => navigate("/login")} >
+                
                 {/* Account Icon */}
                 <svg width="20" height="20" viewBox="0 0 17 18" fill="none">
                   <path

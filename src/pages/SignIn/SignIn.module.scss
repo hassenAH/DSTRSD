@@ -1,0 +1,119 @@
+.login {
+    background: var(--bg, #f9fafb);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--ink, #090909);
+}
+
+.card {
+    margin-bottom: 5%;
+        width: 100%;
+        max-width: 550px;       
+        min-height: 580px;      
+        padding: 3rem 3rem;    
+        display: grid;
+        gap: 2rem;
+        background: var(--panel, #fff);
+        border: 1px solid var(--subtle, #e5e7eb);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+.title {
+    font-family: 'Clash Display', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 3rem;
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.field {
+    display: grid;
+    gap: 0.25rem;
+    font-size: 1.7rem;
+        margin-bottom: 2rem;
+
+
+    span {
+        font-weight: 500;
+        color: var(--muted, rgba(9, 9, 9, 0.6));
+    }
+
+    input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid var(--subtle, #e5e7eb);
+        border-radius: 0;
+        font-size: 1.5rem;
+        outline: none;
+
+        &:focus {
+            border-color: var(--accent, #090909);
+            box-shadow: 0 0 0 2px rgba(9, 9, 9, 0.6);
+        }
+    }
+}
+
+.extra {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.2rem;
+    color: var(--muted, rgba(9, 9, 9, 0.6));
+}
+
+
+.check input[type="checkbox"] {
+    width: 24px;   
+    height: 24px;  
+    cursor: pointer;
+}
+
+.forgot {
+    background: none;
+    border: none;
+    color: var(--accent, #090909);
+    font-size: 1rem;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+
+    &:hover {
+        color: var(--hover, #111);
+    }
+}
+
+.loginBtn {
+    padding: 0.75rem;
+    font-weight: 800;
+      font-size: 1.2rem;   
+    background: var(--accent, #090909);
+    color: #fff;
+    border: 1px solid var(--accent, #090909);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    width: 100%;
+
+    &:hover {
+        background: var(--hover, #111111);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+.error {
+  color: red;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;}
+
+
