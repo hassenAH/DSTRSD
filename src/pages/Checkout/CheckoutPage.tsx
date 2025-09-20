@@ -45,7 +45,7 @@ export default function CheckoutPage() {
     const tax = useMemo(() => +(taxable * taxRate).toFixed(2), [taxable]);
     const total = useMemo(() => +(taxable + Math.max(0, shipping - (promo.trim().toUpperCase() === "FREESHIP" ? shipping : 0)) + tax).toFixed(2), [taxable, shipping, promo, tax]);
 
-    const fmt = (n: number) => `$${n.toFixed(2)}`;
+    const fmt = (n: number) => `${n.toFixed(2)}DT `;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

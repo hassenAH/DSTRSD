@@ -6,14 +6,13 @@ import DeliveryInfo from "./DeliveryInfo";
 import ProductImage from "./ProductImage";
 import hoverImage from "../../assets/images/images.jpg";
 import pullImage from "../../assets/images/pull.jpg";
-// If you have a CartItem type, keep the import. We’ll build a snapshot compatible with it.
-import { type CartItem } from "../Cart/Cart";
 import { useNavigate } from "react-router-dom";
+import { useCart, type CartItem } from "../../utils/CartContext";
 
 interface ProductInfoProps {
   category: string;
   title: string;
-  price: string; // e.g. "39.99" (numeric string)
+  price: string; // e.g. "79 Dt"
   description: {
     intro: string;
     detailsTitle: string;
@@ -32,51 +31,34 @@ export default function ProductInfo({
   const [selectedSize, setSelectedSize] = useState(sizes[0]);
   const [quantity, setQuantity] = useState(1);
   const navigate = useNavigate();
+  const { addToCartHome } = useCart();
 
-  // Normalize price once
-  const unitPrice = useMemo(() => Number(price) || 0, [price]);
-
-  // Build a product snapshot (works for checkout or cart)
-  // If your CartItem has different field names, just rename below.
-  const item = useMemo(
-    () =>
-    ({
-      id: `${title}-${selectedSize}`, // stable key for this variant
-      title,
-      category,
-      size: selectedSize,
-      qty: quantity, // if your CartItem uses "quantity", rename to "quantity"
-      price: unitPrice,
-      image: pullImage, // or pass via props
-    } as unknown as CartItem), // loosen typing if your CartItem is stricter
-    [title, selectedSize, category, quantity, unitPrice]
+  // "79 Dt" -> 79
+  const unitPrice = useMemo(
+    () => Number((price || "").replace(/[^\d.]/g, "")) || 0,
+    [price]
   );
 
-  const handleCheckout = () => {
-    const subtotal = unitPrice * quantity;
-    const tax = 0; // adjust if needed
-    const total = subtotal + tax;
-
-    // Pass everything (including the item snapshot) to the checkout route
-    navigate("/checkout", {
-      state: {
-        subtotal,
-        tax,
-        total,
-        item,
-      },
-    });
-  };
+  const item: CartItem = useMemo(
+    () => ({
+      id: `counterfeit-black-${selectedSize}`.toLowerCase(), // stable per-variant
+      name: title,
+      image: pullImage,
+      price: unitPrice,
+      qty: quantity,
+      size: selectedSize,
+    }),
+    [selectedSize, title, unitPrice, quantity]
+  );
 
   const handleBuyNow = () => {
-    // “Buy now” can go straight to checkout with this single item:
-    handleCheckout();
+    addToCartHome(item);
+    navigate("/checkout");
   };
 
   return (
     <section className={styles.productInfoSection}>
       <div className={styles.productLayout}>
-        {/* Left - Product Image */}
         <div className={styles.leftColumn}>
           <ProductImage
             src={pullImage}
@@ -87,16 +69,13 @@ export default function ProductInfo({
           />
         </div>
 
-        {/* Right - Product Details */}
         <div className={styles.rightColumn}>
           <p className={styles.categoryLabel}>{category}</p>
 
           <header className={styles.productHeader}>
             <div className={styles.productDetails}>
               <h1 className={styles.productTitle}>{title}</h1>
-              <p className={styles.productPrice}>
-                {unitPrice.toFixed(2)}
-              </p>
+              <p className={styles.productPrice}>{price}</p>
               <hr className={styles.divider} />
               <p className={styles.productDescription}>{description.intro}</p>
 
@@ -127,7 +106,6 @@ export default function ProductInfo({
               initialQuantity={quantity}
               onQuantityChange={setQuantity}
             />
-
             <button
               className={styles.buyButton}
               onClick={handleBuyNow}
@@ -135,11 +113,6 @@ export default function ProductInfo({
             >
               <span className={styles.buyButtonText}>Buy now</span>
             </button>
-
-            {/* Optional explicit “Checkout” button if you want both */}
-            {/* <button className={styles.checkoutButton} onClick={handleCheckout}>
-              Go to checkout
-            </button> */}
           </div>
 
           <DeliveryInfo />

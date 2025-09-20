@@ -21,6 +21,7 @@ type RemovePayload = { id: CartItem["id"]; size?: string };
 
 type CartAction =
     | { type: "ADD"; payload: AddPayload }
+    | { type: "ADDHOME"; payload: AddPayload }
     | { type: "UPDATE_QTY"; payload: UpdateQtyPayload }
     | { type: "REMOVE"; payload: RemovePayload }
     | { type: "CLEAR" }
@@ -50,6 +51,18 @@ function cartReducer(state: CartState, action: CartAction): CartState {
                 return { ...state, items: copy, isOpen: true };
             }
             return { ...state, items: [...state.items, item], isOpen: true };
+        }
+        case "ADDHOME": {
+            const { merge = true, ...item } = action.payload;
+            if (!merge) return { ...state, items: [...state.items, item] };
+
+            const idx = state.items.findIndex((it) => sameLine(it, item));
+            if (idx >= 0) {
+                const copy = [...state.items];
+                copy[idx] = { ...copy[idx], qty: copy[idx].qty + item.qty };
+                return { ...state, items: copy, isOpen: false };
+            }
+            return { ...state, items: [...state.items, item], isOpen: false };
         }
         case "UPDATE_QTY": {
             const { id, size, qty } = action.payload;
@@ -89,6 +102,7 @@ type CartContextValue = {
     count: number;      // total qty
     subtotal: number;   // sum of line totals
     addToCart: (item: AddPayload) => void;
+    addToCartHome: (item: AddPayload) => void;
     updateQty: (payload: UpdateQtyPayload) => void;
     removeFromCart: (payload: RemovePayload) => void;
     clearCart: () => void;
@@ -109,7 +123,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                     return { ...init, items: parsed.items };
                 }
             }
-        } catch {}
+        } catch { }
         return init;
     });
 
@@ -117,7 +131,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         try {
             localStorage.setItem(KEY, JSON.stringify({ items: state.items }));
-        } catch {}
+        } catch { }
     }, [state.items]);
 
     const count = useMemo(() => state.items.reduce((n, it) => n + it.qty, 0), [state.items]);
@@ -132,6 +146,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         count,
         subtotal,
         addToCart: (item) => dispatch({ type: "ADD", payload: item }),
+        addToCartHome: (item) => dispatch({ type: "ADDHOME", payload: item }),
         updateQty: (payload) => dispatch({ type: "UPDATE_QTY", payload }),
         removeFromCart: (payload) => dispatch({ type: "REMOVE", payload }),
         clearCart: () => dispatch({ type: "CLEAR" }),
