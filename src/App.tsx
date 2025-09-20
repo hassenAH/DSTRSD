@@ -10,7 +10,6 @@ import { CartProvider } from "./utils/CartContext";
 import CheckoutPage from "./pages/Checkout/CheckoutPage";
 import SignInPage from "./pages/SignIn/SignIn";
 
-
 function AnimatedRoutes() {
   const location = useLocation();
 
