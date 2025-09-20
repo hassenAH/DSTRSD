@@ -25,6 +25,7 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route element={<RequireAuth />}></Route>
+
         <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
