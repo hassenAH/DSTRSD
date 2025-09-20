@@ -11,18 +11,16 @@ function NavMenu() {
   const navigate = useNavigate(); // 
   return (
     <>
-      <link
-        href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;600;700&display=swap"
-        rel="stylesheet"
-      />
+
       <header className={styles.header}>
         <nav className={styles.navbar}>
           <div className={styles.logoNav}>
             <div className={styles.logo}>
-              <img
+              <a href="/"> <img
                 src="https://api.builder.io/api/v1/image/assets/TEMP/744ea032654af71664341354c420e6c6c96256e3?width=260"
                 alt="Logo"
-              />
+              /></a>
+
             </div>
 
             <ul className={styles.navLinks}>
@@ -35,9 +33,9 @@ function NavMenu() {
           <div className={styles.actions}>
             {/* Desktop Icons */}
             <div className={styles.icons}>
-              <button aria-label="Account" className={styles.iconBtn} 
-              onClick={() => navigate("/login")} >
-                
+              <button aria-label="Account" className={styles.iconBtn}
+                onClick={() => navigate("/login")} >
+
                 {/* Account Icon */}
                 <svg width="20" height="20" viewBox="0 0 17 18" fill="none">
                   <path
@@ -118,7 +116,7 @@ function NavMenu() {
         taxRate={0.07}
         shipping={5}
         onClose={closeCart}
-        onCheckout={() => {/* handle */ }}
+        onCheckout={() => { navigate("checkout", { state: items }); }}
         onUpdateQty={(id, qty) => updateQty({ id, qty })}
         onRemove={(id) => removeFromCart({ id })}
       />

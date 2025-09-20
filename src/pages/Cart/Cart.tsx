@@ -14,9 +14,9 @@ export type CartItem = {
 type CartProps = {
     isOpen: boolean;
     items: CartItem[];
-    currency?: string; // default: "$"
-    taxRate?: number;  // e.g. 0.0 .. 0.2
-    shipping?: number; // flat shipping
+    currency?: string;
+    taxRate?: number;
+    shipping?: number;
     onClose: () => void;
     onCheckout?: (summary: {
         subtotal: number; tax: number; shipping: number; total: number; items: CartItem[];

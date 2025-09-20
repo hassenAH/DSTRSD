@@ -444,3 +444,49 @@
         animation: none !important;
     }
 }
+
+/* Let grid children actually shrink/stretch to the container */
+.layout,
+.left,
+.right,
+.grid2,
+.grid3,
+.field {
+    min-width: 0;
+    /* critical for inputs inside CSS Grid */
+}
+
+/* Make inputs/selects fill and never overflow */
+.field input,
+.field select {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ensure label line doesn't affect sizing */
+.field>span {
+    display: block;
+}
+
+/* Stretch grid tracks to their cells */
+.grid2,
+.grid3 {
+    align-items: stretch;
+}
+
+/* Optional helpers: make a field span across columns when needed */
+.full,
+.span2,
+.span3 {
+    grid-column: 1 / -1;
+}
+
+// use on a .field to span whole row
+
+/* (If you place .field inside other wrappers, keep them shrinkable) */
+.card,
+.summary {
+    min-width: 0;
+}

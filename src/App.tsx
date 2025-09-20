@@ -22,8 +22,8 @@ function AnimatedRoutes() {
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
         <Route path="/products/accessories" element={<AccessoriesPage />} />
-        <Route path="/checkout" element={<CheckoutPage />} />
-        <Route path="/login" element={<SignInPage />} />
+        <Route path="/checkout" element={<PageWrapper><CheckoutPage /></PageWrapper>} />
+        <Route path="/login" element={<PageWrapper><SignInPage /></PageWrapper>} />
 
 
       </Routes>
