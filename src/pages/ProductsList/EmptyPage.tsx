@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom"; // if you don't use RR, swap <Link> with <a>
 import styles from "./EmptyPage.module.scss";
 import ProductCard from "../components/UI/ProductCard";

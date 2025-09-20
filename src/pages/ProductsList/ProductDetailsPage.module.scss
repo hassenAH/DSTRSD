@@ -1,0 +1,41 @@
+:root {
+    --safe-top: env(safe-area-inset-top, 0px);
+}
+
+.detailsPage {
+    background: var(--bg, #f9fafb);
+    color: var(--ink, #090909);
+    min-height: 100dvh;
+
+    /* breathing room + safe inset */
+    padding: calc(16px + var(--safe-top)) clamp(14px, 3.5vw, 32px) clamp(24px, 5vw, 48px);
+
+    /* center inner content and prevent horizontal scroll on small screens */
+    display: flex;
+    justify-content: center;
+}
+
+.detailsPage>* {
+    /* center the ProductInfo section */
+    width: 100%;
+    max-width: 1200px;
+    /* small inner padding on ultra-wide screens */
+    padding-inline: clamp(2px, 1vw, 8px);
+}
+
+/* Optional top spacing tweak if ProductInfo sits too tight on mobile */
+@media (max-width: 640px) {
+    .detailsPage {
+        padding-top: calc(12px + var(--safe-top));
+    }
+}
+
+/* Not-found fallback */
+.notFound {
+    min-height: 60dvh;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    font: 600 clamp(1.1rem, 4vw, 1.6rem)/1.2 'Clash Display', system-ui, sans-serif;
+    color: var(--muted, rgba(9, 9, 9, 0.6));
+}

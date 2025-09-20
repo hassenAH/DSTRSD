@@ -1,14 +1,17 @@
 import styles from "./ProductCard.module.scss";
+import { useNavigate } from "react-router-dom";
+import { KeyboardEvent } from "react";
 
 interface ProductCardProps {
     image: string;
     name: string;
     price: string;
     className?: string;
-    onClick?: () => void;           // Quick View / card click
-    onAddToBag?: () => void;        // Add-to-bag action
-    cta?: "bar" | "button" | "none"; // default = "bar"
-    disabled?: boolean;             // disable CTA
+    onClick?: () => void;            // (optional) custom handler
+    onAddToBag?: () => void;
+    cta?: "bar" | "button" | "none";
+    disabled?: boolean;
+    slug?: string;                   // <-- add this
 }
 
 export default function ProductCard({
@@ -20,12 +23,29 @@ export default function ProductCard({
     onAddToBag,
     cta = "bar",
     disabled = false,
+    slug,
 }: ProductCardProps) {
+    const nav = useNavigate();
+
+    const goToDetails = () => {
+        if (onClick) return onClick();
+        if (slug) nav(`/products/${slug}`);
+    };
+
+    const onKey = (e: KeyboardEvent<HTMLElement>) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            goToDetails();
+        }
+    };
+
     return (
         <article
             className={`${styles.productCard} ${className}`}
-            onClick={onClick}
+            onClick={goToDetails}
+            onKeyDown={onKey}
             tabIndex={0}
+            role="button"
             aria-label={`${name}, ${price}`}
         >
             <div className={styles.productCard__media}>
@@ -37,7 +57,6 @@ export default function ProductCard({
                     decoding="async"
                 />
 
-                {/* Hover/Focus overlay + Quick View (kept from previous) */}
                 <div className={styles.productCard__overlay} />
                 <div className={styles.productCard__actions}>
                     <button
@@ -45,7 +64,7 @@ export default function ProductCard({
                         className={styles.productCard__quick}
                         onClick={(e) => {
                             e.stopPropagation();
-                            onClick?.();
+                            goToDetails();
                         }}
                     >
                         QUICK VIEW
@@ -58,9 +77,11 @@ export default function ProductCard({
                     {name}
                 </span>
 
-                {/* Variant A: bottom bar with price + CTA */}
                 {cta === "bar" && (
-                    <div className={styles.productCard__bar} onClick={(e) => e.stopPropagation()}>
+                    <div
+                        className={styles.productCard__bar}
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <span className={styles.productCard__barPrice}>{price}</span>
                         <button
                             type="button"
@@ -74,7 +95,6 @@ export default function ProductCard({
                     </div>
                 )}
 
-                {/* Variant B: inline button (price on right text) */}
                 {cta === "button" && (
                     <button
                         type="button"
@@ -90,8 +110,9 @@ export default function ProductCard({
                     </button>
                 )}
 
-                {/* Variant C: none → show price as plain text */}
-                {cta === "none" && <span className={styles.productCard__price}>{price}</span>}
+                {cta === "none" && (
+                    <span className={styles.productCard__price}>{price}</span>
+                )}
             </footer>
         </article>
     );

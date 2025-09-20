@@ -23,10 +23,10 @@ export default function CheckoutPage() {
     const [zip, setZip] = useState("");
     const [phone, setPhone] = useState("");
 
-    const [delivery, setDelivery] = useState<DeliveryMethod>("standard");
+    const [delivery] = useState<DeliveryMethod>("standard");
     const [payment, setPayment] = useState<PaymentMethod>("card");
     const [promo, setPromo] = useState("");
-    const [agree, setAgree] = useState(true);
+    const [agree] = useState(true);
 
     // fees
     const shipping = useMemo(() => (delivery === "express" ? 15 : 5), [delivery]);

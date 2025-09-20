@@ -21,7 +21,7 @@ const EmailSignup: React.FC<EmailSignupProps> = ({ onSubmit }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit} aria-label="Email signup form">
+        <form onSubmit={handleSubmit} aria-label="Email signup form" className={styles.form} >
             <div className={styles.emailContainer}>
                 <div className={styles.emailWrapper}>
                     <div className={styles.emailInput}>

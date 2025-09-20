@@ -14,6 +14,9 @@ import OtpVerifyPage from "./pages/Forget password/OtpVerifyPage";
 import ResetPasswordPage from "./pages/Forget password/ResetPasswordPage";
 
 
+import RequireAuth from "./routes/RequireAuth";
+import StartupPopup from "./pages/components/popup/StartupPopup";
+import ProductDetailsPage from "./pages/ProductsList/ProductDetailsPage";
 function AnimatedRoutes() {
   const location = useLocation();
 
@@ -21,10 +24,12 @@ function AnimatedRoutes() {
 
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
+        <Route element={<RequireAuth />}></Route>
         <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
         <Route path="/products/accessories" element={<AccessoriesPage />} />
+        <Route path="/products/:slug" element={<PageWrapper><ProductDetailsPage /></PageWrapper>} />
         <Route path="/checkout" element={<PageWrapper><CheckoutPage /></PageWrapper>} />
         <Route path="/login" element={<PageWrapper><SignInPage /></PageWrapper>} />
         <Route path="/forgot-password" element={<PageWrapper><ForgotPasswordPage /></PageWrapper>} />
@@ -52,11 +57,14 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
+
     <Router>
       <CartProvider>
+        <StartupPopup />
         <NavMenu></NavMenu>
         <AnimatedRoutes />
       </CartProvider>
     </Router>
+
   );
 }

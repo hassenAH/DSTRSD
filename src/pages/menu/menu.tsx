@@ -1,13 +1,13 @@
-import React, { useMemo, useState } from "react";
+import { useState } from "react";
 import styles from "./menu.module.scss";
-import Cart, { CartItem } from "../Cart/Cart";
+import Cart from "../Cart/Cart";
 import { useCart } from "../../utils/CartContext";
 import { useNavigate } from "react-router-dom";
 // <-- adjust path if needed
 
 function NavMenu() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { count, openCart, items, updateQty, removeFromCart, closeCart, isOpen, subtotal } = useCart();
+  const { count, openCart, items, updateQty, removeFromCart, closeCart, isOpen } = useCart();
   const navigate = useNavigate(); // 
   return (
     <>
@@ -89,7 +89,7 @@ function NavMenu() {
         {menuOpen && (
           <div className={`${styles.mobileMenu} ${menuOpen ? styles.open : ""}`}>
             <ul>
-              <li><a href="#">Login</a></li>
+              <li><a href="/login">Login</a></li>
               <li>
                 <button
                   className={styles.mobileLink}

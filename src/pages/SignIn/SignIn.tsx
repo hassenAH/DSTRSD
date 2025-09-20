@@ -1,16 +1,20 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./SignIn.module.scss";
+import { useAuth } from "../../utils/AuthContext";
 
 export default function SignInPage() {
   const nav = useNavigate();
+  const { login } = useAuth();
+  const location = useLocation() as { state?: { from?: Location } };
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
-  const [error, setError] = useState(""); 
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!email || !password) {
@@ -18,10 +22,17 @@ export default function SignInPage() {
       return;
     }
 
-    setError(""); 
-    if (remember) localStorage.setItem("token", "demo-token");
-
-
+    try {
+      setError("");
+      setSubmitting(true);
+      await login({ email, password, remember }); // <— Auth context
+      const to = location.state?.from?.pathname ?? "/";
+      nav(to, { replace: true });
+    } catch (err) {
+      setError("Invalid credentials. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -30,7 +41,7 @@ export default function SignInPage() {
         <h1 className={styles.title}>Login</h1>
 
         <form onSubmit={handleSubmit} noValidate>
-          {error && <p className={styles.error}>{error}</p>} 
+          {error && <p className={styles.error}>{error}</p>}
 
           <label className={styles.field}>
             <span>Email</span>
@@ -40,6 +51,7 @@ export default function SignInPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoFocus
             />
           </label>
 
@@ -72,8 +84,8 @@ export default function SignInPage() {
             </button>
           </div>
 
-          <button type="submit" className={styles.loginBtn}>
-            Login
+          <button type="submit" className={styles.loginBtn} disabled={submitting}>
+            {submitting ? "Signing in..." : "Login"}
           </button>
         </form>
       </div>
