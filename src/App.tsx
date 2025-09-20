@@ -9,6 +9,9 @@ import AccessoriesPage from "./pages/ProductsList/EmptyPage";
 import { CartProvider } from "./utils/CartContext";
 import CheckoutPage from "./pages/Checkout/CheckoutPage";
 import SignInPage from "./pages/SignIn/SignIn";
+import ForgotPasswordPage from "./pages/Forget password/ForgotPasswordPage";
+import OtpVerifyPage from "./pages/Forget password/OtpVerifyPage";
+import ResetPasswordPage from "./pages/Forget password/ResetPasswordPage";
 
 
 function AnimatedRoutes() {
@@ -24,8 +27,9 @@ function AnimatedRoutes() {
         <Route path="/products/accessories" element={<AccessoriesPage />} />
         <Route path="/checkout" element={<PageWrapper><CheckoutPage /></PageWrapper>} />
         <Route path="/login" element={<PageWrapper><SignInPage /></PageWrapper>} />
-
-
+        <Route path="/forgot-password" element={<PageWrapper><ForgotPasswordPage /></PageWrapper>} />
+        <Route path="/reset-password" element={<PageWrapper><ResetPasswordPage /></PageWrapper>} />
+        <Route path="/verify-otp" element={<PageWrapper><OtpVerifyPage /></PageWrapper>} />
       </Routes>
     </AnimatePresence>
 

@@ -9,16 +9,16 @@
 
 .card {
     margin-bottom: 5%;
-        width: 100%;
-        max-width: 550px;       
-        min-height: 580px;      
-        padding: 3rem 3rem;    
-        display: grid;
-        gap: 2rem;
-        background: var(--panel, #fff);
-        border: 1px solid var(--subtle, #e5e7eb);
-        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-    }
+    width: 100%;
+    max-width: 550px;
+    min-height: 580px;
+    padding: 3rem 3rem;
+    display: grid;
+    gap: 2rem;
+    background: var(--panel, #fff);
+    border: 1px solid var(--subtle, #e5e7eb);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
 
 .title {
     font-family: 'Clash Display', system-ui, sans-serif;
@@ -32,7 +32,7 @@
     display: grid;
     gap: 0.25rem;
     font-size: 1.7rem;
-        margin-bottom: 2rem;
+    margin-bottom: 2rem;
 
 
     span {
@@ -72,8 +72,8 @@
 
 
 .check input[type="checkbox"] {
-    width: 24px;   
-    height: 24px;  
+    width: 24px;
+    height: 24px;
     cursor: pointer;
 }
 
@@ -94,7 +94,7 @@
 .loginBtn {
     padding: 0.75rem;
     font-weight: 800;
-      font-size: 1.2rem;   
+    font-size: 1.2rem;
     background: var(--accent, #090909);
     color: #fff;
     border: 1px solid var(--accent, #090909);
@@ -111,9 +111,68 @@
         cursor: not-allowed;
     }
 }
+
 .error {
-  color: red;
-  margin-bottom: 1rem;
-  font-size: 1.2rem;}
+    color: red;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
 
 
+/* status text */
+.ok {
+    color: #0a7f2e;
+    margin: .25rem 0 .5rem;
+}
+
+.helper {
+    color: var(--muted);
+    margin: .25rem 0 .75rem;
+}
+
+/* link-looking buttons */
+.linkBtn {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    color: var(--ink);
+    text-decoration: underline;
+    cursor: pointer;
+    padding: .5rem 0;
+    font: 600 .95rem/1.2 system-ui, sans-serif;
+}
+
+/* OTP */
+.codeRow {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(44px, 1fr));
+    gap: clamp(.4rem, 1.6vw, .6rem);
+    margin: clamp(.5rem, 2vw, .8rem) 0;
+}
+
+.codeCell {
+    text-align: center;
+    font: 700 1.25rem/1 system-ui, sans-serif;
+    padding: .7rem 0;
+    border: 1px solid var(--subtle);
+    background: #fff;
+    outline: none;
+
+    &:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px var(--ring);
+    }
+}
+
+.resendRow {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-top: .25rem;
+
+    .linkBtn[disabled] {
+        opacity: .5;
+        cursor: not-allowed;
+        text-decoration: none;
+    }
+}
