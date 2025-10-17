@@ -1,200 +1,380 @@
+/* AddProduct.module.scss */
+
+/* -------------------- Design tokens (light) -------------------- */
+:root {
+  /* colors */
+  --bg-surface: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+  --text-strong: #111;
+  --text-muted: #555;
+  --border: #ddd;
+  --border-strong: #bbb;
+  --primary: #000000;
+  --primary-contrast: #ffffff;
+  --ring: rgba(0, 0, 0, 0.2);
+  --error-bg: #fff3f3;
+  --error-border: #ffd5d5;
+  --error-text: #b10000;
+
+  /* radii & shadow */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+
+  /* spacing & sizing */
+  --g: 12px;
+  --g-lg: 16px;
+  --container-w: 900px;
+
+  /* typography */
+  --fs-label: 0.9rem;
+  --fs-body: 0.95rem;
+}
+
+/* --------------- Reduced motion safety net --------------- */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ------------------------ Modal ------------------------ */
 .modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 1rem;
-  overflow: auto;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--bg-overlay);
   z-index: 1000;
+  overflow: auto;
+  animation: modalFade 180ms ease-out;
+}
+
+@keyframes modalFade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modalContent {
-  background-color: #fff;
-  border-radius: 10px;
-  padding: 2rem;
-  width: 700px;
-  max-width: 100%;
+  width: min(var(--container-w), 100%);
+  background: var(--bg-surface);
+  color: var(--text-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: clamp(16px, 3vw, 24px);
+  display: grid;
+  gap: var(--g);
   max-height: 90vh;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
+  overflow: auto;
 
   h2 {
+    margin: 0 0 6px;
     text-align: center;
-    margin-bottom: 1rem;
+    letter-spacing: 0.3px;
   }
 
   label {
-    font-weight: bold;
-    font-size: 0.9rem;
-    color: #555;
-    margin-top: 0.5rem;
+    font-weight: 600;
+    font-size: var(--fs-label);
+    color: var(--text-muted);
+    margin-top: 4px;
   }
 
   input[type="text"],
   input[type="number"],
-  input[type="file"] {
-    padding: 0.5rem;
-    border-radius: 5px;
-    border: 1px solid #ccc;
+  input[type="file"],
+  select,
+  .textarea,
+  textarea {
     width: 100%;
     box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: inherit;
+    font-size: var(--fs-body);
 
     &:focus {
       outline: none;
-      border-color: #007bff;
-      box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
-    }
-  }
-
-  .imagePreview {
-    width: 100%;
-    max-height: 200px;
-    object-fit: contain;
-    margin-top: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-  }
-}
-
-.modalActions {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1rem;
-
-  button {
-    flex: 1;
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-
-    &:first-child {
-      background-color: #000000;
-      color: #fff;
-      &:hover {
-        background-color: #000000;
-      }
-    }
-
-    &:last-child {
-      background-color: #ffffff;
-      color: #000000;
-      &:hover {
-        background-color: #ffffff;
-      }
-          border: 1px solid #000000;
-
+      border-color: var(--border-strong);
+      box-shadow: 0 0 0 3px var(--ring);
     }
   }
 }
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--g);
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.textarea,
 textarea {
-  width: 100%;
-  min-height: 120px;  // hauteur initiale
- border-radius: 5px;
-    border: 1px solid #ccc;
-  font-size: 14px;
-  resize: vertical;   
+  min-height: 120px;
+  resize: vertical;
 }
 
+/* --------------------- Sizes Checkbox --------------------- */
 .sizesCheckbox {
   display: flex;
-  gap: 12px;
   flex-wrap: wrap;
+  gap: 10px 14px;
 
-  label {
+  .checkbox {
+    --size: 20px;
     position: relative;
-    padding-left: 28px; // espace pour le cercle
-    cursor: pointer;
-    font-size: 14px;
-    user-select: none;
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    gap: 8px;
+    padding-left: calc(var(--size) + 8px);
+    cursor: pointer;
+    user-select: none;
 
     input {
       position: absolute;
+      inset: 0;
       opacity: 0;
       cursor: pointer;
-      height: 0;
-      width: 0;
 
-      &:checked + .checkmark {
-        background-color: #4f46e5; // couleur active
-        border-color: #4f46e5;
+      &:focus+.checkmark {
+        box-shadow: 0 0 0 3px var(--ring);
       }
 
-      &:checked + .checkmark::after {
-        display: block;
+      &:checked+.checkmark {
+        background: var(--primary);
+        border-color: var(--primary);
+      }
+
+      &:checked+.checkmark::after {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
       }
     }
 
     .checkmark {
       position: absolute;
-      left: 0;
       top: 50%;
+      left: 0;
+      width: var(--size);
+      height: var(--size);
       transform: translateY(-50%);
-      height: 20px;
-      width: 20px;
-      border: 2px solid #ccc;
-      border-radius: 50%; // cercle
-      background-color: #fff;
+      border: 2px solid var(--border-strong);
+      border-radius: 50%;
+      background: transparent;
+      transition: background 160ms ease;
 
       &::after {
         content: "";
         position: absolute;
-        display: none;
         top: 50%;
         left: 50%;
-        width: 10px;
-        height: 10px;
-        background: #fff;
+        width: calc(var(--size) * 0.5);
+        height: calc(var(--size) * 0.5);
+        background: var(--primary-contrast);
         border-radius: 50%;
-        transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%) scale(0.6);
+        opacity: 0;
+        transition: 160ms ease;
       }
     }
   }
 }
 
+/* ---------------------- Images Picker ---------------------- */
 .imagesContainer {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--g);
 
   .imageInputWrapper {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
+    gap: 6px;
 
-    input {
-      margin-bottom: 6px;
+    .imagePreview {
+      width: clamp(160px, 30vw, 280px);
+      max-height: 200px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: #f7f7f7;
     }
-
- 
-  .imagePreview {
-    width: 100%;
-    max-height: 200px;
-    object-fit: contain;
-    margin-top: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-  }
   }
 
   .addImageBtn {
-    height: 36px;
-    padding: 0 12px;
-    background-color: #000000;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
+    height: 38px;
+    padding: 0 14px;
+    background: var(--primary);
+    color: var(--primary-contrast);
+    border: 1px solid var(--primary);
+    border-radius: var(--radius-sm);
     cursor: pointer;
+    transition: transform 120ms ease, opacity 120ms ease;
+
+    &:hover {
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+      opacity: 0.9;
+    }
+
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--ring);
+    }
   }
 }
 
+.imagesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--g);
+
+  .imageItem {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: #fafafa;
+
+    img {
+      display: block;
+      width: 100%;
+      height: 130px;
+      object-fit: cover;
+    }
+
+    .removeImgBtn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      font-size: 12px;
+      padding: 4px 6px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+
+      &:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--ring);
+      }
+    }
+  }
+}
+
+/* --------------------- Details (bullets) --------------------- */
+.detailsList {
+  display: grid;
+  gap: 8px;
+
+  .detailRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+
+    .iconBtn {
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: #f7f7f7;
+      cursor: pointer;
+
+      &:hover {
+        background: #efefef;
+      }
+
+      &:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--ring);
+      }
+    }
+  }
+
+  .addDetailBtn {
+    padding: 8px 12px;
+    border: 1px dashed var(--border-strong);
+    background: transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--ring);
+    }
+  }
+}
+
+.hr {
+  height: 1px;
+  width: 100%;
+  background: var(--border);
+  margin: 8px 0;
+}
+
+/* ------------------------- Actions ------------------------- */
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+
+  button {
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: transform 120ms ease, opacity 120ms ease;
+
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--ring);
+    }
+
+    &:hover {
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+      opacity: 0.9;
+    }
+  }
+
+  button:not(.secondaryBtn) {
+    background: var(--primary);
+    color: var(--primary-contrast);
+    border-color: var(--primary);
+  }
+
+  .secondaryBtn {
+    background: transparent;
+    color: var(--text-strong);
+    border-color: var(--text-strong);
+  }
+}
+
+/* -------------------------- Errors -------------------------- */
+.error {
+  background: var(--error-bg);
+  color: var(--error-text);
+  border: 1px solid var(--error-border);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+}

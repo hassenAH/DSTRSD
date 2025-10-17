@@ -25,7 +25,7 @@ export default function ProductsPage() {
     const { addToCart } = useCart();
     const productData: Record<CategoryType, Array<Product>> = {
         Clothes: [
-            { id: 1, slug: "1", name: "BASIC TEE", price: "69DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", category: "FEATURED", },
+            { id: 1, slug: "counterfeit-black", name: "BASIC TEE", price: "69DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", category: "FEATURED", },
             { id: 2, slug: "2", name: "SLIM FIT SHIRT", price: "89DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", category: "NEWEST" },
             { id: 3, slug: "3", name: "COTTON HOODIE", price: "79DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", category: "FEATURED" },
             { id: 4, slug: "4", name: "CASUAL PANTS", price: "99DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", category: "SIZE", size: "LARGE" },
@@ -33,11 +33,7 @@ export default function ProductsPage() {
             { id: 6, slug: "1", name: "POLO SHIRT", price: "109DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", category: "SIZE", size: "MEDIUM" },
         ],
         Accessories: [
-            { id: 11, slug: "11", name: "LEATHER BELT", price: "49 DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", category: "FEATURED" },
-            { id: 12, slug: "12", name: "CANVAS BAG", price: "79 DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", category: "NEWEST" },
-            { id: 13, slug: "13", name: "CLASSIC WATCH", price: "199 DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", category: "FEATURED" },
-            { id: 14, slug: "14", name: "SUNGLASSES", price: "129 DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", category: "SIZE", size: "SMALL" },
-            { id: 15, slug: "15", name: "WALLET", price: "69 DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", category: "NEWEST" },
+
         ],
         Women: [
             { id: 21, slug: "21", name: "SILK BLOUSE", price: "119 DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", category: "FEATURED" },
