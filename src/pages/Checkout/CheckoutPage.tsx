@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCart } from "../../utils/CartContext";
 import styles from "./CheckoutPage.module.scss";
 import { useNavigate } from "react-router-dom";
+import { TUNISIAN_CITIES } from "./TunisianCities";
+
 
 type DeliveryMethod = "standard" | "express";
 type PaymentMethod = "card" | "cod";
@@ -9,6 +11,10 @@ type PaymentMethod = "card" | "cod";
 const COUNTRIES = ["Tunisia", "United States", "United Kingdom", "France", "Germany", "Canada", "Australia"];
 
 export default function CheckoutPage() {
+    useEffect(() => {
+  setCities(TUNISIAN_CITIES);
+}, []);
+
     const nav = useNavigate();
     const { items, subtotal, updateQty, removeFromCart, clearCart } = useCart();
 
@@ -17,8 +23,8 @@ export default function CheckoutPage() {
     const [first, setFirst] = useState("");
     const [last, setLast] = useState("");
     const [address, setAddress] = useState("");
-    const [city, setCity] = useState("");
-    const [country, setCountry] = useState(COUNTRIES[0]);
+  const [cities, setCities] = useState<string[]>([]);
+const [city, setCity] = useState("Tunis"); 
     const [stateProv, setStateProv] = useState("");
     const [zip, setZip] = useState("");
     const [phone, setPhone] = useState("");
@@ -40,10 +46,7 @@ export default function CheckoutPage() {
         return 0;
     }, [promo, subtotal, shipping]);
 
-    const taxRate = 0.07;
-    const taxable = Math.max(0, subtotal - discount);
-    const tax = useMemo(() => +(taxable * taxRate).toFixed(2), [taxable]);
-    const total = useMemo(() => +(taxable + Math.max(0, shipping - (promo.trim().toUpperCase() === "FREESHIP" ? shipping : 0)) + tax).toFixed(2), [taxable, shipping, promo, tax]);
+    const total = useMemo(() => +( Math.max(0, shipping - (promo.trim().toUpperCase() === "FREESHIP" ? shipping : 0)) ).toFixed(2), [ shipping, promo]);
 
     const fmt = (n: number) => `${n.toFixed(2)}DT `;
 
@@ -100,17 +103,16 @@ export default function CheckoutPage() {
                         </label>
 
                         <div className={styles.grid3}>
+                         
                             <label className={styles.field}>
-                                <span>City *</span>
-                                <input required value={city} onChange={(e) => setCity(e.target.value)} />
-                            </label>
-                            <label className={styles.field}>
-                                <span>Country</span>
-                                <select value={country} onChange={(e) => setCountry(e.target.value)}>
-                                    {COUNTRIES.map((c) => (
-                                        <option key={c} value={c}>{c}</option>
-                                    ))}
-                                </select>
+                                <span>City</span>
+                                    <select required value={city} onChange={(e) => setCity(e.target.value)}>
+                                           {cities.map((c) => (
+                                           <option key={c} value={c}>{c}</option>
+                                                ))}
+                                            </select>
+
+
                             </label>
                             <label className={styles.field}>
                                 <span>State / Province</span>
@@ -210,7 +212,6 @@ export default function CheckoutPage() {
                             <div className={styles.trow}><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
                             {discount > 0 && <div className={styles.trow}><span>Discount</span><span>−{fmt(discount)}</span></div>}
                             <div className={styles.trow}><span>Shipping</span><span>{fmt(Math.max(0, shipping - (promo.trim().toUpperCase() === "FREESHIP" ? shipping : 0)))}</span></div>
-                            <div className={styles.trow}><span>Tax</span><span>{fmt(tax)}</span></div>
                             <div className={`${styles.trow} ${styles.grand}`}><span>Total</span><span>{fmt(total)}</span></div>
                         </div>
 

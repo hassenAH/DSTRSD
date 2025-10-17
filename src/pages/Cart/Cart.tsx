@@ -14,12 +14,11 @@ export type CartItem = {
 type CartProps = {
     isOpen: boolean;
     items: CartItem[];
-    currency?: string;
-    taxRate?: number;
-    shipping?: number;
+    currency?: string; // default: "$"
+    shipping?: number; // flat shipping
     onClose: () => void;
     onCheckout?: (summary: {
-        subtotal: number; tax: number; shipping: number; total: number; items: CartItem[];
+        subtotal: number;  shipping: number; total: number; items: CartItem[];
     }) => void;
     onUpdateQty: (id: CartItem["id"], qty: number) => void;
     onRemove: (id: CartItem["id"]) => void;
@@ -29,7 +28,6 @@ export default function Cart({
     isOpen,
     items,
     currency = "DT",
-    taxRate = 0,
     shipping = 0,
     onClose,
     onCheckout,
@@ -41,12 +39,11 @@ export default function Cart({
     const navigate = useNavigate(); // ✅
 
     // Totals
-    const { subtotal, tax, total } = useMemo(() => {
+    const { subtotal, total } = useMemo(() => {
         const subtotal = items.reduce((s, it) => s + it.price * it.qty, 0);
-        const tax = Math.max(0, Math.round(subtotal * taxRate * 100) / 100);
-        const total = Math.round((subtotal + tax + shipping) * 100) / 100;
-        return { subtotal, tax, total };
-    }, [items, taxRate, shipping]);
+        const total = Math.round((subtotal  + shipping) * 100) / 100;
+        return { subtotal, total };
+    }, [items, shipping]);
 
     // Open/close side effects: focus + ESC + scroll lock
     useEffect(() => {
@@ -80,7 +77,7 @@ export default function Cart({
     };
 
     const handleCheckout = () => {
-        const summary = { subtotal, tax, shipping, total, items };
+        const summary = { subtotal, shipping, total, items };
         if (onCheckout) {
             onCheckout(summary);
         } else {
@@ -181,12 +178,7 @@ export default function Cart({
                         <span>Subtotal</span>
                         <span>{fmt(subtotal)}</span>
                     </div>
-                    {taxRate > 0 && (
-                        <div className={styles.line}>
-                            <span>Tax</span>
-                            <span>{fmt(tax)}</span>
-                        </div>
-                    )}
+                   
                     {shipping > 0 && (
                         <div className={styles.line}>
                             <span>Shipping</span>
@@ -205,7 +197,7 @@ export default function Cart({
                     >
                         Checkout
                     </button>
-                    <p className={styles.note}>Taxes & shipping calculated at checkout.</p>
+                    <p className={styles.note}>Shipping calculated at checkout.</p>
                 </footer>
             </aside>
         </div>

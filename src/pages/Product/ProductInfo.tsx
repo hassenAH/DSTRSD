@@ -8,20 +8,22 @@ import hoverImage from "../../assets/images/images.jpg";
 import pullImage from "../../assets/images/pull.jpg";
 import { useNavigate } from "react-router-dom";
 import { useCart, type CartItem } from "../../utils/CartContext";
-
+export type ProductDescription = {
+  intro: string;
+  detailsTitle?: string;
+  details?: string[];
+};
 interface ProductInfoProps {
   category: string;
   title: string;
   price: string; // e.g. "79 Dt"
-  description: {
-    intro: string;
-    detailsTitle: string;
-    details: string[];
-  };
+  description: ProductDescription;
+  pullimages:string[];
   sizes: string[];
 }
 
 export default function ProductInfo({
+  pullimages,
   category,
   title,
   price,
@@ -43,12 +45,12 @@ export default function ProductInfo({
     () => ({
       id: `counterfeit-black-${selectedSize}`.toLowerCase(), // stable per-variant
       name: title,
-      image: pullImage,
+      image: pullimages[0],
       price: unitPrice,
       qty: quantity,
       size: selectedSize,
     }),
-    [selectedSize, title, unitPrice, quantity]
+    [selectedSize, title, unitPrice, quantity,pullimages]
   );
 
   const handleBuyNow = () => {
@@ -61,8 +63,8 @@ export default function ProductInfo({
       <div className={styles.productLayout}>
         <div className={styles.leftColumn}>
           <ProductImage
-            src={pullImage}
-            hoverSrc={hoverImage}
+            src={pullimages[0]}
+            hoverSrc={pullimages[1]}
             alt={title}
             showNew
             showOnlineExclusive
@@ -82,7 +84,7 @@ export default function ProductInfo({
               <div className={styles.productDetailsBlock}>
                 <h2 className={styles.detailsTitle}>{description.detailsTitle}</h2>
                 <ul className={styles.detailsList}>
-                  {description.details.map((d, i) => (
+                  {description.details!.map((d, i) => (
                     <li key={i}>{d}</li>
                   ))}
                 </ul>

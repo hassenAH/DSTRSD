@@ -113,7 +113,6 @@ function NavMenu() {
         isOpen={isOpen}
         items={items}
         currency="DT"
-        taxRate={0.07}
         shipping={5}
         onClose={closeCart}
         onCheckout={() => { navigate("checkout", { state: items }); }}

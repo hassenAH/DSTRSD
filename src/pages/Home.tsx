@@ -5,30 +5,17 @@ import ProductInfo from "./Product/ProductInfo";
 import style from "./Home.module.scss";
 import Footer from "./Footer/Footer";
 import Popup from "./components/popup/Popup";
-// ⬅️ adjust path if different
 
+import { useProducts } from "../utils/ProductContext";
 export default function Home() {
   const [showPopup, setShowPopup] = useState(false);
+const { currentProduct, loading, error } = useProducts();
 
-  const productData = {
-    category: "New Arrivals",
-    title: "Counterfeit - Black",
-    price: "79 Dt",
-    description: {
-      intro: `The Counterfeit Tee carries a vandalized 50DT note across the chest — 
-      the central bank scarred, walls tagged, a helicopter circling above. 
-      Cut from black polycotton and treated with a stone-wash finish, each 
-      shirt bears its own stains, fades, and distressed marks, making no two 
-      pieces alike. The fit is regular, unisex, built to wear down and age with time. 
-      It's a piece that treats money as fragile, fabric as temporary, and both as 
-      canvases for rebellion. 
-      
-      Money doesn't last. Neither does fabric.`,
-      detailsTitle: "Product Details",
-      details: ["Black tee", "Regular fit", "Ribbed neckline", "Sublimation printing"],
-    },
-    sizes: ["Small", "Medium", "Large"],
-  };
+if (loading) return <p>Loading...</p>;
+if (error) return <p style={{ color: "red" }}>{error}</p>;
+if (!currentProduct) return <p>No product found.</p>;
+
+  
 
   return (
     <div className={style.homeContainer}>
@@ -39,11 +26,12 @@ export default function Home() {
       />
 
       <ProductInfo
-        category={productData.category}
-        title={productData.title}
-        price={productData.price}
-        description={productData.description}
-        sizes={productData.sizes}
+        pullimages={currentProduct!.images}
+        category={currentProduct!.category.name}
+        title={currentProduct!.title}
+        price={currentProduct!.price.toString()}
+        description={currentProduct!.description}
+        sizes={currentProduct!.sizes}
       />
 
       <Footer />
