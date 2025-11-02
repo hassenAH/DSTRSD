@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import styles from "./Dashboard.module.scss";
 import DeleteModal from "./DeleteProductModal";
 import EditModal from "./EditProductModal";
@@ -6,10 +6,9 @@ import AddProductModal from "./AddProductModal";
 import DashboardSidebar from "./Sidebar/SidebarDashboard";
 
 // IMPORTANT: use the context Product type, not the local one
-import { useProducts, type Product, type UpdateProductInput, CreateProductMultipart } from "../../utils/ProductContext";
+import { useProducts, type Product, CreateProductMultipart } from "../../utils/ProductContext";
 import CategoriesPage from "./CategoriesPage";
 
-type CategoryType = "Clothes" | "Accessories" | "Women"; // keep if you still display chips
 
 export default function DashboardPage() {
   const {
@@ -21,22 +20,13 @@ export default function DashboardPage() {
     deleteProduct,
   } = useProducts();
 
-  const [activeCategory, setActiveCategory] = useState<CategoryType>("Clothes");
 
   // UI state
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // (Optional) If you keep category chips for now, filter on client
-  const filtered = useMemo(() => {
-    // If your Product already has category.name, adjust mapping:
-    return products.filter((p) => {
-      if (!p.category?.name) return true;
 
-      return true;
-    });
-  }, [products, activeCategory]);
 
   const handleAddProductClick = () => setShowAddModal(true);
   const handleCancelAdd = () => setShowAddModal(false);
@@ -102,7 +92,7 @@ export default function DashboardPage() {
         {error && <p className={styles.error}>{error}</p>}
 
         <main className={styles.grid}>
-          {filtered.map((p) => (
+          {products.map((p) => (
             <div key={p._id} className={styles.card}>
               <img src={p.images?.[0]} alt={p.title} className={styles.image} />
               <h3>{p.title}</h3>

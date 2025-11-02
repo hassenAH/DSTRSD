@@ -201,7 +201,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   const updateProduct = async (id: string, data: UpdateProductInput) => {
     dispatch({ type: "START" });
     try {
-      const res = await api.patch<Product>(`/products/${id}`, data);
+      const res = await api.put<Product>(`/products/${id}`, data);
       dispatch({ type: "UPDATE_PRODUCT", payload: res.data });
       return res.data;
     } catch (err: any) {
