@@ -16,6 +16,7 @@ import StartupPopup from "./pages/components/popup/StartupPopup";
 import ProductDetailsPage from "./pages/ProductsList/ProductDetailsPage";
 import { ProductProvider } from "./utils/ProductContext";
 import DashboardPage from "./pages/Dashboard/Dashboard";
+import { CategoryProvider } from "./utils/CategoryContext";
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -71,14 +72,16 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ProductProvider>
-      <CartProvider>
-        <Router>
-          <StartupPopup />
-          <NavMenu />
-          <AnimatedRoutes />
-        </Router>
-      </CartProvider>
-    </ProductProvider>
+    <CategoryProvider>
+      <ProductProvider>
+        <CartProvider>
+          <Router>
+            <StartupPopup />
+
+            <AppContent />
+          </Router>
+        </CartProvider>
+      </ProductProvider>
+    </CategoryProvider>
   );
 }

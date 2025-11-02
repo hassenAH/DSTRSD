@@ -164,6 +164,51 @@
     }
 }
 
+/* --- Split layout: image left, form right --- */
+.split {
+    width: 100%;
+    max-width: 1200px;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.left {
+    display: block;
+    overflow: hidden;
+    border-right: 1px solid var(--subtle, #e5e7eb);
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        user-select: none;
+        pointer-events: none;
+    }
+}
+
+.right {
+    display: grid;
+    place-items: center;
+    padding: 2rem;
+}
+
+/* Keep it simple on small screens */
+@media (max-width: 900px) {
+    .split {
+        grid-template-columns: 1fr;
+    }
+
+    .left {
+        display: none;
+    }
+
+    .right {
+        padding: 1.25rem;
+    }
+}
+
 .resendRow {
     display: flex;
     gap: 1rem;

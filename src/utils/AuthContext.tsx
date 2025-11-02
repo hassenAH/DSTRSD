@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // ---- Option A: Bearer token API (most common) ----
             // Expected response shape (example):
             // { token: "jwt-or-session", user: { id: "u_1", email: "...", name: "..." } }
-            const res = await api.post("/auth/login", { email, password });
+            const res = await api.post("/login", { email, password });
 
             // Extract with fallbacks for common field names
             const token: string =

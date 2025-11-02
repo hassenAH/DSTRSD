@@ -1,155 +1,149 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import styles from "./Dashboard.module.scss";
 import DeleteModal from "./DeleteProductModal";
 import EditModal from "./EditProductModal";
 import AddProductModal from "./AddProductModal";
 import DashboardSidebar from "./Sidebar/SidebarDashboard";
-export type Product = {
-  id: number;
-  name: string;
-  price: string;
-  image: string;
-  description?: string;
-  sizes?: string[];
-  quantity?: number;
-};
 
-type CategoryType = "Clothes" | "Accessories" | "Women";
+// IMPORTANT: use the context Product type, not the local one
+import { useProducts, type Product, type UpdateProductInput, CreateProductMultipart } from "../../utils/ProductContext";
+import CategoriesPage from "./CategoriesPage";
+
+type CategoryType = "Clothes" | "Accessories" | "Women"; // keep if you still display chips
 
 export default function DashboardPage() {
-  const productData: Record<CategoryType, Array<Product>> = {
-    Clothes: [
-      { id: 1, name: "BASIC TEE", price: "69DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", description: "The Counterfeit Tee ...", sizes: ["S", "M", "L"], quantity: 10 },
-      { id: 2, name: "SLIM FIT SHIRT", price: "89DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", description: "The Counterfeit Tee ...", sizes: ["S", "M", "L"], quantity: 10 },
-      { id: 3, name: "COTTON HOODIE", price: "79DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", description: "The Counterfeit Tee ...", sizes: ["S", "M", "L"], quantity: 10 },
-      { id: 4, name: "CASUAL PANTS", price: "99DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", description: "The Counterfeit Tee ...", sizes: ["S", "M", "L"], quantity: 10 },
-      { id: 5, name: "DENIM JACKET", price: "129DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", description: "Stylish denim jacket", sizes: ["S", "M", "L"], quantity: 5 },
-    ],
-    Accessories: [
-      { id: 11, name: "LEATHER BELT", price: "49 DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", description: "Soft cotton tee", sizes: ["S", "M", "L"], quantity: 10 },
-      { id: 12, name: "CANVAS BAG", price: "79 DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", description: "Soft cotton tee", sizes: ["S", "M", "L"], quantity: 10 },
-      { id: 13, name: "CLASSIC WATCH", price: "199 DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", description: "Soft cotton tee", sizes: ["S", "M", "L"], quantity: 10 },
-    ],
-    Women: [
-      { id: 21, name: "SILK BLOUSE", price: "119 DT", image: "https://api.builder.io/api/v1/image/assets/TEMP/245e0cc00bf0dc89fe40b6c9f6d4b3cdc6311ea3?width=652", description: "Elegant silk blouse", sizes: ["S", "M"], quantity: 7 },
-    ],
-  };
+  const {
+    products,
+    loading,
+    error,
+    createProductMultipart,
+    updateProduct,
+    deleteProduct,
+  } = useProducts();
 
   const [activeCategory, setActiveCategory] = useState<CategoryType>("Clothes");
-  const [products, setProducts] = useState<Product[]>(productData[activeCategory]);
+
+  // UI state
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const handleCategoryChange = (category: CategoryType) => {
-    setActiveCategory(category);
-    setProducts(productData[category]);
+  // (Optional) If you keep category chips for now, filter on client
+  const filtered = useMemo(() => {
+    // If your Product already has category.name, adjust mapping:
+    return products.filter((p) => {
+      if (!p.category?.name) return true;
+
+      return true;
+    });
+  }, [products, activeCategory]);
+
+  const handleAddProductClick = () => setShowAddModal(true);
+  const handleCancelAdd = () => setShowAddModal(false);
+
+  // CREATE
+  const handleAddProduct = async (form: CreateProductMultipart) => {
+    // You can add validation here before submit
+    await createProductMultipart(form);
+    setShowAddModal(false);
+  };
+
+
+
+  const handleUpdate = async (id: string, updated: any) => {
+    // If there are files → use multipart endpoint
+    if (updated.imagesFiles?.length || updated.removeImages?.length) {
+      // ---- Option A: build FormData here and call your API directly ----
+      const fd = new FormData();
+      if (updated.title) fd.set("title", updated.title);
+      if (typeof updated.price === "number") fd.set("price", String(updated.price));
+      if (typeof updated.stock === "number") fd.set("stock", String(updated.stock));
+      if (updated.sizes) fd.set("sizes", JSON.stringify(updated.sizes));
+      if (updated.colors) fd.set("colors", JSON.stringify(updated.colors));
+      if (updated.categoryId) fd.set("categoryId", updated.categoryId);
+      if (updated.description) fd.set("description", JSON.stringify(updated.description));
+      if (updated.removeImages) fd.set("removeImages", JSON.stringify(updated.removeImages));
+      (updated.imagesFiles || []).forEach((f: File) => fd.append("images", f));
+
+      // call your axios instance (example route)
+      // await api.patch(`/products/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } });
+
+      // ---- Option B: expose updateProductMultipart in context and call it ----
+      // await updateProductMultipart(id, updated);
+    } else {
+      // Plain JSON PATCH (no image changes)
+      await updateProduct(id, updated);
+    }
     setEditingProduct(null);
   };
 
-  const handleAddProductClick = () => {
-    setShowAddModal(true);
-  };
 
-  const handleAddProduct = (newProduct: Product) => {
-    setProducts((prev) => [...prev, newProduct]);
-    setShowAddModal(false);
-  };
-
-  const handleCancelAdd = () => {
-    setShowAddModal(false);
-  };
-  const handleDelete = (id: number) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+  // DELETE
+  const handleDelete = async (id: string) => {
+    await deleteProduct(id);
     setDeletingProduct(null);
   };
 
-  const handleUpdate = (id: number, updated: Partial<Product>) => {
-    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...updated } : p)));
-    setEditingProduct(null);
-  };
-
-
-
   return (
     <div className={styles.dashboardLayout}>
-      <DashboardSidebar
-      />
+      <DashboardSidebar />
 
       <div className={styles.dashboardContent}>
         <header className={styles.header}>
           <h1>Dashboard</h1>
-          <nav className={styles.categoryChips} aria-label="Categories">
-            {(["Clothes", "Accessories", "Women"] as CategoryType[]).map((c) => (
-              <div key={c} className={styles.categoryItem}>
-                {/* Bouton de la catégorie */}
-                <button
-                  className={`${styles.chip} ${c === activeCategory ? styles.chip__active : ""}`}
-                  onClick={() => handleCategoryChange(c)}
-                >
-                  {c}
-                </button>
-
-                {/* Bouton icônes aligné et même largeur */}
-                <button className={styles.iconBtn}>
-                  <span onClick={() => console.log("Edit category", c)}>✏️</span>
-                  <span onClick={() => console.log("Delete category", c)}>🗑️</span>
-                </button>
-              </div>
-            ))}
-
-            {/* Ajouter nouvelle catégorie */}
-            <button
-              className={`${styles.chip} ${styles.addCategoryBtn}`}
-              title="Add Category"
-            >
-              add Categorie
-            </button>
-          </nav>
+          <CategoriesPage />
 
           <button className={styles.addBtn} onClick={handleAddProductClick}>
             + Add Product
           </button>
         </header>
 
-
+        {loading && <p>Loading…</p>}
+        {error && <p className={styles.error}>{error}</p>}
 
         <main className={styles.grid}>
-          {products.map((p) => (
-            <div key={p.id} className={styles.card}>
-              <img src={p.image} alt={p.name} className={styles.image} />
-              <h3>{p.name}</h3>
-              <p>{p.price}</p>
-              {p.description && <p>{p.description}</p>}
-              {p.sizes && <p>Sizes: {p.sizes.join(", ")}</p>}
-              {p.quantity !== undefined && <p>Quantity: {p.quantity}</p>}
+          {filtered.map((p) => (
+            <div key={p._id} className={styles.card}>
+              <img src={p.images?.[0]} alt={p.title} className={styles.image} />
+              <h3>{p.title}</h3>
+              <p>{(p.price).toFixed(2)} DT</p>
+              {p.description?.intro && <p>{p.description.intro}</p>}
+              {p.sizes?.length > 0 && <p>Sizes: {p.sizes.join(", ")}</p>}
+              <p>Stock: {p.stock}</p>
 
               <div className={styles.actions}>
-                <button onClick={() => setEditingProduct(p)}>✏️</button>
-                <button onClick={() => setDeletingProduct(p)}>🗑️</button>
+                <button onClick={() => setEditingProduct(p)}>edit</button>
+                <button onClick={() => setDeletingProduct(p)}>delete</button>
               </div>
             </div>
           ))}
         </main>
 
+        {/* Delete Modal */}
         {deletingProduct && (
           <DeleteModal
-            productName={deletingProduct.name}
-            onConfirm={() => handleDelete(deletingProduct.id)}
+            productName={deletingProduct.title}
+            onConfirm={() => handleDelete(deletingProduct._id)}
             onCancel={() => setDeletingProduct(null)}
           />
         )}
 
+        {/* Edit Modal */}
         {editingProduct && (
           <EditModal
             product={editingProduct}
-            onSave={(updated) => handleUpdate(updated.id, updated)}
+            onSave={(updated) => handleUpdate(editingProduct._id, updated)}
             onCancel={() => setEditingProduct(null)}
           />
+
         )}
-        {/* Modal d'ajout */}
+
+        {/* Add Modal */}
         {showAddModal && (
-          <AddProductModal onAdd={handleAddProduct} onCancel={handleCancelAdd} />
+          <AddProductModal
+            onAdd={(form) => handleAddProduct(form as CreateProductMultipart)}
+            onCancel={handleCancelAdd}
+          />
         )}
       </div>
     </div>

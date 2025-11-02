@@ -1,39 +1,36 @@
 // components/AddProductModal.tsx
-import React, { useMemo, useState, ChangeEvent, FormEvent } from "react";
+import React, { useMemo, useState, ChangeEvent, FormEvent, useEffect } from "react";
 import styles from "./AddProduct.module.scss";
+import { useProducts } from "../../utils/ProductContext";
+import CategorySelect from "./CategorySelect";
 
 type AddModalProps = {
   onAdd: (serverProduct: any) => void; // product from the server response
   onCancel: () => void;
-  apiUrl?: string; // e.g., "http://localhost:5000/api/products"
 };
 
+// align with your backend accepted sizes
 const AVAILABLE_SIZES = ["XS", "Small", "Medium", "Large", "X Large", "XXL"];
 
 type DescriptionForm = {
   intro: string;
   detailsTitle: string;
-  details: string[]; // each item is a bullet/line
+  details: string[];
 };
 
-export default function AddProductModal({
-  onAdd,
-  onCancel,
-  apiUrl = "http://localhost:5000/api/products",
-}: AddModalProps) {
+export default function AddProductModal({ onAdd, onCancel }: AddModalProps) {
+  const { createProductMultipart, loading, error } = useProducts();
+
   // ----- Form State -----
   const [title, setTitle] = useState("");
-  const [price, setPrice] = useState<string>("");
+  const [price, setPrice] = useState<string>(""); // user enters major units (e.g., 79)
   const [stock, setStock] = useState<number>(0);
   const [categoryId, setCategoryId] = useState<string>("");
   const [sizes, setSizes] = useState<string[]>([]);
-  const [colorsInput, setColorsInput] = useState<string>(""); // comma separated
+  const [colorsInput, setColorsInput] = useState<string>("");
+
   const colors = useMemo(
-    () =>
-      colorsInput
-        .split(",")
-        .map(s => s.trim())
-        .filter(Boolean),
+    () => colorsInput.split(",").map(s => s.trim()).filter(Boolean),
     [colorsInput]
   );
 
@@ -45,26 +42,25 @@ export default function AddProductModal({
 
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState<string>("");
+
+  // ----- File preview cleanup -----
+  useEffect(() => {
+    return () => previews.forEach((url) => URL.revokeObjectURL(url));
+  }, [previews]);
 
   // ----- Handlers -----
   const handleSizeChange = (size: string, checked: boolean) => {
-    setSizes(prev =>
-      checked ? Array.from(new Set([...prev, size])) : prev.filter(s => s !== size)
-    );
+    setSizes(prev => checked ? Array.from(new Set([...prev, size])) : prev.filter(s => s !== size));
   };
 
-  const handleAddDetail = () =>
-    setDescription(d => ({ ...d, details: [...d.details, ""] }));
-
+  const handleAddDetail = () => setDescription(d => ({ ...d, details: [...d.details, ""] }));
   const handleDetailChange = (idx: number, value: string) =>
     setDescription(d => {
       const next = [...d.details];
       next[idx] = value;
       return { ...d, details: next };
     });
-
   const handleRemoveDetail = (idx: number) =>
     setDescription(d => {
       const next = d.details.slice();
@@ -72,23 +68,42 @@ export default function AddProductModal({
       return { ...d, details: next.length ? next : [""] };
     });
 
+  // helper at top (near imports)
+  const formatBytes = (n: number) => {
+    if (!n) return "0 B";
+    const k = 1024, sizes = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(n) / Math.log(k));
+    return `${(n / Math.pow(k, i)).toFixed(i ? 1 : 0)} ${sizes[i]}`;
+  };
+
+  // replace handleFilesSelect
   const handleFilesSelect = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const selected = Array.from(e.target.files);
-    const nextFiles = [...files, ...selected];
-    setFiles(nextFiles);
 
-    const nextPreviews = nextFiles.map(f => URL.createObjectURL(f));
-    setPreviews(nextPreviews);
+    setFiles(prev => [...prev, ...selected]);
+    setPreviews(prev => [
+      ...prev,
+      ...selected.map(f => URL.createObjectURL(f)),
+    ]);
+
+    // allow choosing the same file again
+    e.currentTarget.value = "";
   };
 
+  // replace removeImageAt
   const removeImageAt = (i: number) => {
-    const nf = files.slice();
-    nf.splice(i, 1);
-    setFiles(nf);
-    const np = previews.slice();
-    np.splice(i, 1);
-    setPreviews(np);
+    setFiles(prev => {
+      const copy = prev.slice();
+      copy.splice(i, 1);
+      return copy;
+    });
+    setPreviews(prev => {
+      const copy = prev.slice();
+      const [removed] = copy.splice(i, 1);
+      if (removed) URL.revokeObjectURL(removed);
+      return copy;
+    });
   };
 
   // Minimal client-side validation
@@ -102,53 +117,37 @@ export default function AddProductModal({
     return "";
   };
 
-  // Submit to backend
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setErrMsg("");
 
-    const error = validate();
-    if (error) {
-      setErrMsg(error);
-      return;
-    }
+    const v = validate();
+    if (v) return setErrMsg(v);
 
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append(
-      "description",
-      JSON.stringify({
-        intro: description.intro,
-        detailsTitle: description.detailsTitle,
-        details: description.details.filter(Boolean),
-      })
-    );
-    formData.append("price", String(Number(price)));
-    formData.append("stock", String(stock));
-    formData.append("sizes", JSON.stringify(sizes));
-    formData.append("colors", JSON.stringify(colors));
-    formData.append("categoryId", categoryId);
-
-    files.forEach(f => formData.append("images", f));
+    // ⚠️ PRICE UNITS:
+    // If your backend expects "DT" as major units, send Number(price).
+    // If it expects "cents", send Math.round(Number(price) * 100).
+    const priceToSend = Number(price); // or Math.round(Number(price) * 100)
 
     try {
-      setLoading(true);
-      const res = await fetch(`${apiUrl}/create`, {
-        method: "POST",
-        body: formData,
+      const created = await createProductMultipart({
+        title,
+        price: priceToSend,
+        stock,
+        categoryId,
+        sizes,
+        colors,
+        description: {
+          intro: description.intro,
+          detailsTitle: description.detailsTitle,
+          details: description.details.filter(Boolean),
+        },
+        images: files,
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.message || data?.error || "Failed to create product");
-      }
-
-      // Return created product to parent
-      onAdd(data.product);
+      onAdd(created);
     } catch (err: any) {
       setErrMsg(err.message || "Something went wrong");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -157,7 +156,7 @@ export default function AddProductModal({
       <form className={styles.modalContent} onSubmit={onSubmit}>
         <h2>Add New Product</h2>
 
-        {errMsg && <div className={styles.error}>{errMsg}</div>}
+        {(errMsg || error) && <div className={styles.error}>{errMsg || error}</div>}
 
         <label>Title</label>
         <input
@@ -192,13 +191,8 @@ export default function AddProductModal({
           </div>
         </div>
 
-        <label>Category ID (Mongo ObjectId)</label>
-        <input
-          type="text"
-          value={categoryId}
-          onChange={e => setCategoryId(e.target.value)}
-          placeholder="66fc30b8e41a23c5d32aa789"
-        />
+        <label>Category</label>
+        <CategorySelect value={categoryId} onChange={setCategoryId} />
 
         <label>Sizes</label>
         <div className={styles.sizesCheckbox}>
@@ -270,34 +264,47 @@ export default function AddProductModal({
 
         <div className={styles.hr} />
 
-        <label>Images</label>
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handleFilesSelect}
-        />
-        {previews.length > 0 && (
-          <div className={styles.imagesGrid}>
+        <h3>Images</h3>
+
+        <div className={styles.uploader}>
+          {/* Accessible dropzone */}
+          <label className={styles.dropzone}>
+            <input type="file" accept="image/*" multiple onChange={handleFilesSelect} />
+            <div className={styles.dzText}>
+              <strong>Click to upload</strong> or drag & drop images
+            </div>
+          </label>
+
+          {/* Gallery */}
+          <div className={styles.gallery}>
             {previews.map((src, i) => (
-              <div key={i} className={styles.imageItem}>
-                <img src={src} alt={`preview-${i}`} />
-                <button
-                  type="button"
-                  className={styles.removeImgBtn}
-                  onClick={() => removeImageAt(i)}
-                >
-                  Remove
-                </button>
+              <div key={src} className={styles.tile}>
+                <img className={styles.thumb} src={src} alt={`preview-${i}`} />
+                <div className={styles.actions}>
+                  <button
+                    type="button"
+                    onClick={() => removeImageAt(i)}
+                    aria-label="Remove image"
+                    title="Remove"
+                  >
+                    🗑️
+                  </button>
+                </div>
+                <div className={styles.meta}>
+                  <span className={styles.name}>{files[i]?.name || `image-${i + 1}`}</span>
+                  <span className={styles.size}>{files[i] ? formatBytes(files[i].size) : "—"}</span>
+                </div>
               </div>
             ))}
           </div>
-        )}
+        </div>
+
 
         <div className={styles.modalActions}>
-          <button type="submit" disabled={loading}>
+          <button type="submit" disabled={loading || !title.trim() || !price || !categoryId || !files.length}>
             {loading ? "Saving..." : "Add Product"}
           </button>
+
           <button type="button" onClick={onCancel} className={styles.secondaryBtn}>
             Cancel
           </button>

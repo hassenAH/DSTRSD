@@ -12,7 +12,7 @@
 
 .sizeOptions {
   display: flex;
-  flex-wrap: wrap; 
+  flex-wrap: wrap;
   gap: 11px;
 }
 
@@ -40,6 +40,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  /* ✅ keeps inner borders aligned */
 }
 
 .radioButtonSelected {
@@ -50,27 +52,18 @@
 }
 
 .radioButtonBorder {
-  border: 1px solid #000;
-  border-radius: 32px;
-  width: 16px;
-  height: 16px;
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid #726c6c;
 }
 
-.radioButtonBorderUnselected {
-  border: 1px solid #726c6c;
-  border-radius: 32px;
-  width: 16px;
-  height: 16px;
-  position: absolute;
-  top: 0;
-  left: 0;
+.radioButtonBorder--active {
+  border-color: #000;
 }
 
 .sizeText {
-  font: 500 14px "Clash Display", sans-serif;
+  font: 500 14px "Clash Display", system-ui, sans-serif;
   color: #000;
 }
 

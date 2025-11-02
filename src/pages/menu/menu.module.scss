@@ -9,6 +9,7 @@
 }
 
 /* Top nav bar */
+/* Top nav bar */
 .navbar {
   max-width: 1433px;
   margin: 0 auto;
@@ -17,6 +18,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  position: relative;
+  /* important: enables absolute centering */
 }
 
 /* Left cluster: logo + links */
@@ -26,17 +29,24 @@
   gap: 8px;
 }
 
+/* Center the logo on desktop */
 .logo {
   display: inline-flex;
   align-items: center;
 
   img {
     display: block;
-    max-height: 28px;
-    /* keeps header compact */
+    max-height: 42px;
     width: auto;
   }
+
+  @media (min-width: 641px) {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
+
 
 /* Desktop links */
 .navLinks {

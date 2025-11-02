@@ -8,12 +8,11 @@ import { TUNISIAN_CITIES } from "./TunisianCities";
 type DeliveryMethod = "standard" | "express";
 type PaymentMethod = "card" | "cod";
 
-const COUNTRIES = ["Tunisia", "United States", "United Kingdom", "France", "Germany", "Canada", "Australia"];
 
 export default function CheckoutPage() {
     useEffect(() => {
-  setCities(TUNISIAN_CITIES);
-}, []);
+        setCities(TUNISIAN_CITIES);
+    }, []);
 
     const nav = useNavigate();
     const { items, subtotal, updateQty, removeFromCart, clearCart } = useCart();
@@ -23,8 +22,8 @@ export default function CheckoutPage() {
     const [first, setFirst] = useState("");
     const [last, setLast] = useState("");
     const [address, setAddress] = useState("");
-  const [cities, setCities] = useState<string[]>([]);
-const [city, setCity] = useState("Tunis"); 
+    const [cities, setCities] = useState<string[]>([]);
+    const [city, setCity] = useState("Tunis");
     const [stateProv, setStateProv] = useState("");
     const [zip, setZip] = useState("");
     const [phone, setPhone] = useState("");
@@ -46,7 +45,7 @@ const [city, setCity] = useState("Tunis");
         return 0;
     }, [promo, subtotal, shipping]);
 
-    const total = useMemo(() => +( Math.max(0, shipping - (promo.trim().toUpperCase() === "FREESHIP" ? shipping : 0)) ).toFixed(2), [ shipping, promo]);
+    const total = useMemo(() => +(Math.max(0, shipping - (promo.trim().toUpperCase() === "FREESHIP" ? shipping : 0))).toFixed(2), [shipping, promo]);
 
     const fmt = (n: number) => `${n.toFixed(2)}DT `;
 
@@ -103,14 +102,14 @@ const [city, setCity] = useState("Tunis");
                         </label>
 
                         <div className={styles.grid3}>
-                         
+
                             <label className={styles.field}>
                                 <span>City</span>
-                                    <select required value={city} onChange={(e) => setCity(e.target.value)}>
-                                           {cities.map((c) => (
-                                           <option key={c} value={c}>{c}</option>
-                                                ))}
-                                            </select>
+                                <select required value={city} onChange={(e) => setCity(e.target.value)}>
+                                    {cities.map((c) => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
 
 
                             </label>

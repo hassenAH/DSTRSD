@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Hero from "./Hero/Hero";
-import bgVideo from "../assets/videos/test.mp4";
+import bgVideo from "../assets/videos/Home.mp4";
 import ProductInfo from "./Product/ProductInfo";
 import style from "./Home.module.scss";
 import Footer from "./Footer/Footer";
@@ -9,13 +9,13 @@ import Popup from "./components/popup/Popup";
 import { useProducts } from "../utils/ProductContext";
 export default function Home() {
   const [showPopup, setShowPopup] = useState(false);
-const { currentProduct, loading, error } = useProducts();
+  const { currentProduct, loading, error } = useProducts();
 
-if (loading) return <p>Loading...</p>;
-if (error) return <p style={{ color: "red" }}>{error}</p>;
-if (!currentProduct) return <p>No product found.</p>;
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
+  if (!currentProduct) return <p>No product found.</p>;
 
-  
+
 
   return (
     <div className={style.homeContainer}>

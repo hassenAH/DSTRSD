@@ -1,4 +1,6 @@
-/* Design tokens */
+/* =========================
+   Design tokens
+   ========================= */
 :root {
     --bg: #f9fafb;
     --ink: #090909;
@@ -10,16 +12,23 @@
     --seg-thumb: #0f172a10;
     --ring: rgba(9, 9, 9, 0.5);
     --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* =========================
+   Page shell
+   ========================= */
 .productPage {
     min-height: 100dvh;
     background: var(--bg);
     color: var(--ink);
-    padding-bottom: clamp(2rem, 6vw, 3.5rem);
+    /* Keep large bottom space because dock is always visible (mobile + desktop) */
+    padding-bottom: calc(4.5rem + var(--safe-bottom));
 }
 
-/* Sticky header */
+/* =========================
+   Sticky header
+   ========================= */
 .mobileBar {
     position: sticky;
     top: 0;
@@ -51,7 +60,19 @@
     color: var(--muted);
 }
 
-/* Category chips (horizontal scroll) */
+/* Error banner (optional) */
+.errorBanner {
+    margin: 0 0 .5rem 0;
+    padding: .5rem .75rem;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #7f1d1d;
+    font-size: .85rem;
+}
+
+/* =========================
+   Category chips (horizontal scroll)
+   ========================= */
 .categoryChips {
     display: grid;
     grid-auto-flow: column;
@@ -73,8 +94,8 @@
     scroll-snap-align: start;
     border: 1px solid var(--chip-border);
     background: var(--chip-bg);
-    /* sharp corners */
     border-radius: 0;
+    /* sharp */
     padding: .5rem .9rem;
     min-height: 44px;
     /* thumb-friendly */
@@ -97,15 +118,21 @@
     border-color: var(--ink);
 }
 
-/* Segmented control */
+/* =========================
+   Old top segmented (disabled everywhere)
+   ========================= */
+.segmented__top {
+    display: none !important;
+}
+
+/* Base segmented style (kept for structure if you need it elsewhere) */
 .segmented {
     position: relative;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     background: var(--seg-bg);
     border: 1px solid var(--chip-border);
     border-radius: 0;
-    /* sharp */
     padding: .25rem;
     overflow: hidden;
 }
@@ -117,7 +144,6 @@
     border: 0;
     background: transparent;
     border-radius: 0;
-    /* sharp */
     padding: .5rem .25rem;
     min-height: 44px;
     font: 500 clamp(.82rem, 3vw, .9rem)/1 'Clash Display', system-ui, sans-serif;
@@ -134,9 +160,8 @@
 .segmented__thumb {
     position: absolute;
     inset: .25rem auto .25rem .25rem;
-    width: calc((100% - .5rem) / 3);
+    width: calc((100% - .5rem) / 4);
     border-radius: 0;
-    /* sharp */
     background: var(--seg-thumb);
     transition: transform .25s ease;
     will-change: transform;
@@ -154,26 +179,35 @@
     transform: translateX(200%);
 }
 
-/* SIZE sub-filter (SMALL / MEDIUM / LARGE) */
-.sizeBar {
+.segmented__thumb[data-pos="all"] {
+    transform: translateX(300%);
+}
+
+/* =========================
+   Floating SIZE sheet (now also on desktop)
+   ========================= */
+.sizeSheet {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(5.5rem + var(--safe-bottom));
+    z-index: 41;
+
     display: flex;
     justify-content: center;
     gap: .5rem;
-    margin-top: .75rem;
-    padding: 0 .5rem;
-    overflow-x: auto;
-    scrollbar-width: none;
-
-    &::-webkit-scrollbar {
-        display: none;
-    }
+    padding: .6rem .8rem;
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-border);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
+    width: min(90%, 600px);
 }
 
 .sizeBtn {
     border: 1px solid var(--chip-border);
     background: var(--chip-bg);
     border-radius: 0;
-    /* sharp */
     padding: .5rem .9rem;
     min-height: 44px;
     font-family: 'Clash Display', sans-serif;
@@ -196,7 +230,90 @@
     border-color: var(--ink);
 }
 
-/* Grid */
+/* =========================
+   Floating mobile-style dock (now on desktop too)
+   ========================= */
+/* =========================
+   Floating dock (floating style, not full width)
+   ========================= */
+.dockBar {
+    position: fixed;
+    left: 50%;
+    bottom: calc(1rem + var(--safe-bottom));
+    transform: translateX(-50%);
+    z-index: 40;
+
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    align-items: center;
+    gap: .25rem;
+
+    width: min(90%, 600px);
+    padding: .375rem .5rem;
+    background: color-mix(in oklab, var(--bg) 92%, white);
+    border: 1px solid var(--chip-border);
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    backdrop-filter: saturate(1.4) blur(12px);
+}
+
+.dockSegment {
+    position: relative;
+    z-index: 1;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    border-radius: 8px;
+    padding: .65rem .25rem;
+    min-height: 44px;
+    font: 600 .85rem/1 'Clash Display', system-ui, sans-serif;
+    letter-spacing: .02em;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background-color .2s ease, color .2s ease;
+}
+
+.dockSegment__active {
+    color: var(--ink);
+    background: var(--seg-thumb);
+}
+
+.dockBar__thumb {
+    display: none;
+    /* Not needed with rounded active buttons */
+}
+
+
+.dockBar__thumb::before {
+    content: "";
+    display: block;
+    height: 100%;
+    width: calc((100% - .75rem) / 4);
+    border-radius: 0;
+    background: var(--seg-thumb);
+    transition: transform .25s ease;
+    will-change: transform;
+}
+
+.dockBar__thumb[data-pos="featured"]::before {
+    transform: translateX(0%);
+}
+
+.dockBar__thumb[data-pos="newest"]::before {
+    transform: translateX(100%);
+}
+
+.dockBar__thumb[data-pos="size"]::before {
+    transform: translateX(200%);
+}
+
+.dockBar__thumb[data-pos="all"]::before {
+    transform: translateX(300%);
+}
+
+/* =========================
+   Grid
+   ========================= */
 .grid {
     padding: clamp(.75rem, 3vw, 1rem);
     display: grid;
@@ -220,10 +337,21 @@
     }
 }
 
-/* Card wrapper around ProductCard */
+/* Loading and Empty states (optional) */
+.loading,
+.emptyState {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--muted);
+    font-size: .95rem;
+}
+
+/* =========================
+   Card wrapper around ProductCard
+   ========================= */
 .cardWrap {
     border-radius: 0;
-    /* sharp */
     transition: transform .18s ease, box-shadow .18s ease;
     cursor: pointer;
 
@@ -237,7 +365,6 @@
         width: 100%;
         object-fit: cover;
         border-radius: 0;
-        /* sharp */
         display: block;
     }
 }
@@ -247,7 +374,9 @@
     transform: translateY(-1px);
 }
 
-/* Tighten on very small screens */
+/* =========================
+   Tighten on very small screens
+   ========================= */
 @media (max-width: 360px) {
 
     .chip,
@@ -262,14 +391,17 @@
     }
 }
 
-/* Reduced motion */
+/* =========================
+   Reduced motion
+   ========================= */
 @media (prefers-reduced-motion: reduce) {
 
     .chip,
     .segment,
     .segmented__thumb,
     .sizeBtn,
-    .cardWrap {
+    .cardWrap,
+    .dockBar__thumb::before {
         transition: none !important;
     }
 }

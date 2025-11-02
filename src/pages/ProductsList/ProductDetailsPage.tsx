@@ -1,47 +1,60 @@
-import { useParams } from "react-router-dom";
-import ProductInfo from "../../pages/Product/ProductInfo"; // adjust path
-import styles from "./ProductDetailsPage.module.scss";     // optional
+import { useEffect, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import ProductInfo from "../../pages/Product/ProductInfo";
+import styles from "./ProductDetailsPage.module.scss";
 import { useProducts } from "../../utils/ProductContext";
 
-// Mock catalogue — replace with real data lookup
-const CATALOG = {
-    "counterfeit-black": {
-        category: "New Arrivals",
-        title: "Counterfeit - Black",
-        price: "79 Dt",
-        description: {
-            intro:
-                "The Counterfeit Tee carries a vandalized 50DT note across the chest...",
-            detailsTitle: "Product Details",
-            details: ["Black tee", "Regular fit", "Ribbed neckline", "Sublimation printing"],
-        },
-        sizes: ["Small", "Medium", "Large"],
-    },
-} as const;
+const toSlug = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
 export default function ProductDetailsPage() {
     const { slug = "" } = useParams<{ slug: string }>();
-    const product = CATALOG[slug as keyof typeof CATALOG];
-const { currentProduct } = useProducts()
-    if (!product) {
-        return <div className={styles.notFound}>Product not found.</div>;
-    }
+    const { products, loading, error, fetchAllProducts } = useProducts();
+    const navigate = useNavigate();
 
-    // ProductDetailsPage.tsx
+    useEffect(() => {
+        if (!products || products.length === 0) {
+            fetchAllProducts().catch(() => { });
+        }
+    }, []); // eslint-disable-line
+
+    const product = useMemo(() => {
+        if (!products?.length) return null;
+        return products.find((p) => toSlug(p.title) === slug) ?? null;
+    }, [products, slug]);
+
+    if (loading) return <div className={styles.loading}>Loading product…</div>;
+    if (error) return <div className={styles.error}>Error: {error}</div>;
+    if (!product) return <div className={styles.notFound}>Product not found.</div>;
+
+    const images = product.images?.length ? product.images : ["/placeholder.png"];
+    const priceStr = `${product.price} DT`;
+    const categoryName = product.category?.name ?? "Products";
+    const desc = product.description ?? { intro: "" };
+    const detailsTitle = desc.detailsTitle ?? "Product Details";
+    const details = Array.isArray(desc.details) ? desc.details : [];
+
     return (
         <div className={styles.detailsPage}>
+            {/* back button */}
+
+            <button className={styles.backBtn} onClick={() => navigate("/products")}>
+                ← Back to Shop
+            </button>
+
+
             <ProductInfo
-            pullimages={currentProduct!.images}
-                category={product.category}
+                pullimages={images}
+                category={categoryName}
                 title={product.title}
-                price={product.price}
+                price={priceStr}
                 description={{
-                    ...product.description,
-                    details: [...product.description.details], // ← make mutable copy
+                    intro: desc.intro,
+                    detailsTitle,
+                    details: [...details],
                 }}
-                sizes={[...product.sizes]} // ← make mutable copy
+                sizes={[...(product.sizes || [])]}
             />
         </div>
     );
-
 }

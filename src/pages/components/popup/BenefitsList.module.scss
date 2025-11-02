@@ -1,60 +1,106 @@
+/* ============ Benefits (mobile-first) ============ */
+
 .benefitsListContainer {
+    --label-min: 120px;
+    --label-max: 240px;
+    --row-gap: 12px;
+    --col-gap: 14px;
+    --pad-x: clamp(16px, 4vw, 32px);
+
     width: 100%;
     margin-top: 20px;
 }
 
+/* Reset + spacing */
 .benefitsList {
     width: 100%;
-    padding-left: 48px;
+    margin: 0;
+    padding: 0 var(--pad-x);
+    list-style: none;
+    display: grid;
+    gap: var(--row-gap);
 }
 
-@media (width <=991px) {
-    .benefitsList {
-        padding-left: 20px;
-    }
-}
-
+/* One item = label + copy */
 .benefitItem,
 .benefitItemMedium,
 .benefitItemLarge {
-    justify-content: start;
-    align-items: center;
+    display: grid;
+    grid-template-columns: 1fr;
+    /* stack on mobile */
+    gap: var(--col-gap);
+    align-items: start;
     width: 100%;
-    line-height: 1;
-    display: flex;
+    line-height: 1.5;
+    font-size: clamp(14px, 3.6vw, 15px);
 }
 
-.benefitItemMedium,
+/* Size variants (optional) */
+.benefitItemMedium {
+    font-size: clamp(14px, 2.8vw, 15px);
+}
+
 .benefitItemLarge {
-    font-size: 14px;
+    font-size: clamp(15px, 2vw, 16px);
 }
 
-.earlyAccess {
-    align-self: stretch;
-    width: 129px;
-    margin: auto 0;
+/* Label & copy tokens
+   If you can, wrap your text like:
+   <li class="benefitItem"><span class="benefitLabel">Early access</span><span class="benefitCopy">…</span></li>
+*/
+.benefitLabel {
+    font-weight: 600;
+    line-height: 1.3;
 }
 
-.privateSales {
-    align-self: stretch;
-    width: 178px;
-    margin: auto 0;
+.benefitCopy {
+    color: rgba(0, 0, 0, .72);
+    /* tweak for your theme */
 }
 
-.specialGifts {
-    align-self: stretch;
-    width: 220px;
-    margin: auto 0;
-}
-
-.personalInvitations {
-    align-self: stretch;
-    width: 204px;
-    margin: auto 0;
-}
-
+/* Keep your existing label classes working as labels */
+.earlyAccess,
+.privateSales,
+.specialGifts,
+.personalInvitations,
 .exclusiveContent {
-    align-self: stretch;
-    width: 191px;
-    margin: auto 0;
+    /* behave like .benefitLabel without fixed widths */
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+/* Tablet / desktop: switch to two columns
+   Left = fixed but fluid label column, Right = flexible copy
+*/
+@media (min-width: 768px) {
+
+    .benefitItem,
+    .benefitItemMedium,
+    .benefitItemLarge {
+        grid-template-columns: minmax(var(--label-min), var(--label-max)) 1fr;
+        align-items: center;
+    }
+}
+
+/* Larger desktops: a bit more breathing room */
+@media (min-width: 1200px) {
+    .benefitsListContainer {
+        --row-gap: 14px;
+        --col-gap: 16px;
+        --label-max: 280px;
+    }
+}
+
+/* Optional: reduced motion nicety */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        scroll-behavior: auto;
+    }
+}
+
+/* Optional dark mode tweak (uses your CSS vars if present) */
+@media (prefers-color-scheme: dark) {
+    .benefitCopy {
+        color: rgba(255, 255, 255, .78);
+    }
 }

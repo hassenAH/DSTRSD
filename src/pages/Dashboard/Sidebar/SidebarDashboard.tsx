@@ -17,25 +17,25 @@ export default function DashboardSidebar() {
                     <ul>
                         <li>
                             <button className={styles.navItem}>
-                                <span className={styles.navIcon}>📊</span>
+
                                 Analytics
                             </button>
                         </li>
                         <li>
                             <button className={styles.navItem}>
-                                <span className={styles.navIcon}>👥</span>
+
                                 Customers
                             </button>
                         </li>
                         <li>
                             <button className={styles.navItem}>
-                                <span className={styles.navIcon}>📝</span>
+
                                 Orders
                             </button>
                         </li>
                         <li>
                             <button className={styles.navItem}>
-                                <span className={styles.navIcon}>⚙️</span>
+
                                 Settings
                             </button>
                         </li>
@@ -45,7 +45,7 @@ export default function DashboardSidebar() {
 
             <div className={styles.sidebarFooter}>
                 <button className={styles.logoutBtn}>
-                    <span className={styles.navIcon}>🚪</span>
+
                     Logout
                 </button>
             </div>
