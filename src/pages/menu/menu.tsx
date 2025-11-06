@@ -43,7 +43,7 @@ function NavMenu() {
 
                 <img
                   src={User}
-                  width={"24px"}
+                  width={"20px"}
                   alt="user"
                 />
               </button>
@@ -56,7 +56,7 @@ function NavMenu() {
                 {/* Cart Icon */}
                 <img
                   src={backpack}
-                  width={"30px"}
+                  width={"24px"}
                   alt="user"
                 />
 

@@ -1,0 +1,164 @@
+/* Mobile-first, responsive category section */
+.category-section {
+    width: 100%;
+    padding: clamp(1.25rem, 5vw, 4rem) clamp(.75rem, 4vw, 2.5rem);
+    background-color: #fff;
+    box-sizing: border-box;
+
+    .category-grid {
+        display: grid;
+        /* responsive columns: each column at least 220px, shrink to fit */
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: clamp(.75rem, 2vw, 1.5rem);
+        width: 100%;
+        max-width: 1400px;
+        margin: 0 auto;
+        transition: all 0.32s ease;
+        align-items: stretch;
+    }
+
+    .category-card.non-clickable {
+        cursor: not-allowed;
+        pointer-events: auto; // allows the click handler to fire
+
+        .category-title {
+            transition: color 0.3s ease;
+        }
+
+        &:active .category-title,
+        &:focus .category-title {
+            color: #ffcc00; // optional highlight color for feedback
+        }
+    }
+
+
+    .category-card {
+        position: relative;
+        display: block;
+        overflow: hidden;
+        cursor: pointer;
+        isolation: isolate;
+        border-radius: 10px;
+        text-decoration: none;
+        background: #111;
+        /* fallback while image loads */
+        transition: transform 0.32s ease, opacity 0.32s ease, filter 0.32s ease;
+        will-change: transform;
+        min-height: 180px;
+
+        /* Use an <img> inside for better responsiveness & srcset; style here assumes that */
+        .category-image {
+            width: 100%;
+            height: 100%;
+            aspect-ratio: 4 / 5;
+            display: block;
+            object-fit: cover;
+            /* for <img> */
+            background-size: cover;
+            /* in case you keep background-image approach */
+            background-position: center;
+            transition: transform 0.5s ease;
+            position: relative;
+        }
+
+        .category-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0);
+            transition: background 0.32s ease;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .category-title {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: clamp(1rem, 2vw, 1.75rem);
+            font-weight: 600;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            z-index: 2;
+            text-align: center;
+            pointer-events: none;
+            padding: 0 .75rem;
+            line-height: 1.1;
+            transition: transform 0.24s ease;
+        }
+
+        /* group hover effect on devices that support hover only */
+        @media (hover: hover) and (pointer: fine) {
+            &:hover {
+                z-index: 5;
+            }
+
+            /* shrink non-hovered cards slightly when container is hovered */
+            .category-grid:hover & {
+                transform: scale(0.96);
+                opacity: 0.85;
+                filter: brightness(0.92);
+            }
+
+            /* hovered card pop-out */
+            &:hover {
+                transform: scale(1.06);
+                opacity: 1;
+                filter: brightness(1);
+            }
+
+            &:hover .category-image {
+                transform: scale(1.06);
+            }
+
+            &:hover .category-overlay {
+                background: rgba(0, 0, 0, 0.32);
+            }
+
+            &:hover .category-title {
+                transform: translate(-50%, -50%) scale(1.03);
+            }
+        }
+
+        /* on small screens and non-hover devices, avoid transforms that can cause layout jank */
+        @media (max-width: 480px),
+        (hover: none) {
+            transform: none !important;
+            opacity: 1 !important;
+            filter: none !important;
+
+            .category-image {
+                transform: none !important;
+            }
+
+            .category-overlay {
+                background: rgba(0, 0, 0, 0.18);
+            }
+
+            .category-title {
+                font-size: 1.05rem;
+            }
+        }
+
+        /* keyboard focus accessibility */
+        &:focus-within,
+        &:focus {
+            outline: 3px solid rgba(0, 123, 255, 0.25);
+            outline-offset: 3px;
+            z-index: 6;
+        }
+    }
+
+    /* Respect reduced motion preference */
+    @media (prefers-reduced-motion: reduce) {
+
+        .category-card,
+        .category-image,
+        .category-overlay,
+        .category-title {
+            transition: none !important;
+            animation: none !important;
+        }
+    }
+}

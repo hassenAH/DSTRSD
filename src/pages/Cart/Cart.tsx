@@ -18,7 +18,7 @@ type CartProps = {
     shipping?: number; // flat shipping
     onClose: () => void;
     onCheckout?: (summary: {
-        subtotal: number;  shipping: number; total: number; items: CartItem[];
+        subtotal: number; shipping: number; total: number; items: CartItem[];
     }) => void;
     onUpdateQty: (id: CartItem["id"], qty: number) => void;
     onRemove: (id: CartItem["id"]) => void;
@@ -41,7 +41,7 @@ export default function Cart({
     // Totals
     const { subtotal, total } = useMemo(() => {
         const subtotal = items.reduce((s, it) => s + it.price * it.qty, 0);
-        const total = Math.round((subtotal  + shipping) * 100) / 100;
+        const total = Math.round((subtotal + shipping) * 100) / 100;
         return { subtotal, total };
     }, [items, shipping]);
 
@@ -158,13 +158,7 @@ export default function Cart({
                                             <div className={styles.price}>{fmt(item.price * item.qty)}</div>
                                         </div>
 
-                                        <button
-                                            className={styles.remove}
-                                            onClick={() => onRemove(item.id)}
-                                            aria-label={`Remove ${item.name} from cart`}
-                                        >
-                                            Remove
-                                        </button>
+
                                     </div>
                                 </li>
                             ))}
@@ -178,7 +172,7 @@ export default function Cart({
                         <span>Subtotal</span>
                         <span>{fmt(subtotal)}</span>
                     </div>
-                   
+
                     {shipping > 0 && (
                         <div className={styles.line}>
                             <span>Shipping</span>

@@ -102,7 +102,10 @@ export default function CheckoutPage() {
                         </label>
 
                         <div className={styles.grid3}>
-
+                            <label className={styles.field}>
+                                <span>State / Province</span>
+                                <input value={stateProv} onChange={(e) => setStateProv(e.target.value)} />
+                            </label>
                             <label className={styles.field}>
                                 <span>City</span>
                                 <select required value={city} onChange={(e) => setCity(e.target.value)}>
@@ -113,10 +116,7 @@ export default function CheckoutPage() {
 
 
                             </label>
-                            <label className={styles.field}>
-                                <span>State / Province</span>
-                                <input value={stateProv} onChange={(e) => setStateProv(e.target.value)} />
-                            </label>
+
                         </div>
 
                         <label className={styles.field}>

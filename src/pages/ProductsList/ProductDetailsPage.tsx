@@ -28,7 +28,7 @@ export default function ProductDetailsPage() {
     if (!product) return <div className={styles.notFound}>Product not found.</div>;
 
     const images = product.images?.length ? product.images : ["/placeholder.png"];
-    const priceStr = `${product.price} DT`;
+    const priceStr = `${product.price} `;
     const categoryName = product.category?.name ?? "Products";
     const desc = product.description ?? { intro: "" };
     const detailsTitle = desc.detailsTitle ?? "Product Details";

@@ -20,9 +20,7 @@ export default function DeliveryInfo() {
         </svg>
         <div className={styles.deliveryInfo}>
           <h3 className={styles.deliveryTitle}>Free Delivery</h3>
-          <p className={styles.deliveryDescription}>
-            Enter your Postal code for Delivery Availability
-          </p>
+
         </div>
       </div>
     </section>

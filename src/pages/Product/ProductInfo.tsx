@@ -4,8 +4,7 @@ import SizeSelector from "./SizeSelector";
 import QuantitySelector from "./QuantitySelector";
 import DeliveryInfo from "./DeliveryInfo";
 import ProductImage from "./ProductImage";
-import hoverImage from "../../assets/images/images.jpg";
-import pullImage from "../../assets/images/pull.jpg";
+
 import { useNavigate } from "react-router-dom";
 import { useCart, type CartItem } from "../../utils/CartContext";
 export type ProductDescription = {
@@ -18,7 +17,7 @@ interface ProductInfoProps {
   title: string;
   price: string; // e.g. "79 Dt"
   description: ProductDescription;
-  pullimages:string[];
+  pullimages: string[];
   sizes: string[];
 }
 
@@ -50,7 +49,7 @@ export default function ProductInfo({
       qty: quantity,
       size: selectedSize,
     }),
-    [selectedSize, title, unitPrice, quantity,pullimages]
+    [selectedSize, title, unitPrice, quantity, pullimages]
   );
 
   const handleBuyNow = () => {
@@ -77,7 +76,7 @@ export default function ProductInfo({
           <header className={styles.productHeader}>
             <div className={styles.productDetails}>
               <h1 className={styles.productTitle}>{title}</h1>
-              <p className={styles.productPrice}>{price}</p>
+              <p className={styles.productPrice}>{price} TND</p>
               <hr className={styles.divider} />
               <p className={styles.productDescription}>{description.intro}</p>
 

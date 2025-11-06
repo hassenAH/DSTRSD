@@ -1,4 +1,4 @@
-"use client";
+
 import React, { useEffect, useRef, Suspense, useMemo } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -48,6 +48,9 @@ const Popup: React.FC<PopupProps> = ({ onClose }) => {
     const benefits = [
         "Early access",
         "Exclusive content",
+        "Special offers",
+        "Personal invitation",
+
     ];
 
     const handleEmailSubmit = (e: React.FormEvent<HTMLFormElement>) => {
