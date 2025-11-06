@@ -23,7 +23,7 @@ export default function Home() {
       <Hero
         videoSrc={bgVideo}
         title="Distressed"
-        description="PRE-FALL 25 - KNOW WHAT I MEAN"
+        description="Jamais 203"
       />
 
       <ProductInfo
@@ -34,8 +34,8 @@ export default function Home() {
         description={currentProduct!.description}
         sizes={currentProduct!.sizes}
       />
-      <CategorySection></CategorySection>
 
+      {/* <CategorySection></CategorySection> */}
       <Footer />
 
       {/* Floating button (hidden while popup is open) */}

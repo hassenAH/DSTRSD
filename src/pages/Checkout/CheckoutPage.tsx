@@ -45,7 +45,7 @@ export default function CheckoutPage() {
         return 0;
     }, [promo, subtotal, shipping]);
 
-    const total = useMemo(() => +(Math.max(0, shipping - (promo.trim().toUpperCase() === "FREESHIP" ? shipping : 0))).toFixed(2), [shipping, promo]);
+    const total = useMemo(() => subtotal - discount, [promo]);
 
     const fmt = (n: number) => `${n.toFixed(2)}DT `;
 
@@ -103,11 +103,11 @@ export default function CheckoutPage() {
 
                         <div className={styles.grid3}>
                             <label className={styles.field}>
-                                <span>State / Province</span>
+                                <span>City</span>
                                 <input value={stateProv} onChange={(e) => setStateProv(e.target.value)} />
                             </label>
                             <label className={styles.field}>
-                                <span>City</span>
+                                <span>State / Province</span>
                                 <select required value={city} onChange={(e) => setCity(e.target.value)}>
                                     {cities.map((c) => (
                                         <option key={c} value={c}>{c}</option>
@@ -197,7 +197,7 @@ export default function CheckoutPage() {
                         <div className={styles.promo}>
                             <input
                                 className={styles.promoInput}
-                                placeholder="Promo code (WELCOME10 / FREESHIP)"
+                                placeholder="Promo code "
                                 value={promo}
                                 onChange={(e) => setPromo(e.target.value)}
                             />
@@ -210,8 +210,8 @@ export default function CheckoutPage() {
                         <div className={styles.totals}>
                             <div className={styles.trow}><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
                             {discount > 0 && <div className={styles.trow}><span>Discount</span><span>−{fmt(discount)}</span></div>}
-                            <div className={styles.trow}><span>Shipping</span><span>{fmt(Math.max(0, shipping - (promo.trim().toUpperCase() === "FREESHIP" ? shipping : 0)))}</span></div>
-                            <div className={`${styles.trow} ${styles.grand}`}><span>Total</span><span>{fmt(total)}</span></div>
+
+                            <div className={`${styles.trow} ${styles.grand}`}><span>Total</span><span>{fmt(total)} </span></div>
                         </div>
 
                         <button type="submit" className={styles.pay} disabled={!items.length}>

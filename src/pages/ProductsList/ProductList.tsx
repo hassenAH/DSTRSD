@@ -39,12 +39,7 @@ export default function ProductsPage() {
         }
     }, []); // eslint-disable-line
 
-    // Build category list dynamically from API
-    const categories = useMemo(() => {
-        const names = new Set<string>();
-        products.forEach((p) => { if (p.category?.name) names.add(p.category.name); });
-        return ["All", ...Array.from(names)];
-    }, [products]);
+    const categories = ["All", "Men", "Women", "Accessories"]
 
 
     // Pick current category products

@@ -23,7 +23,7 @@ interface ProductInfoProps {
 
 export default function ProductInfo({
   pullimages,
-  category,
+
   title,
   price,
   description,
@@ -71,7 +71,7 @@ export default function ProductInfo({
         </div>
 
         <div className={styles.rightColumn}>
-          <p className={styles.categoryLabel}>{category}</p>
+
 
           <header className={styles.productHeader}>
             <div className={styles.productDetails}>

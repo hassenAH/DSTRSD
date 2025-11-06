@@ -156,9 +156,16 @@ export default function Cart({
                                             </div>
 
                                             <div className={styles.price}>{fmt(item.price * item.qty)}</div>
+
                                         </div>
 
-
+                                        <button
+                                            className={styles.remove}
+                                            onClick={() => onRemove(item.id)}
+                                            aria-label={`Remove ${item.name} from cart`}
+                                        >
+                                            Remove
+                                        </button>
                                     </div>
                                 </li>
                             ))}

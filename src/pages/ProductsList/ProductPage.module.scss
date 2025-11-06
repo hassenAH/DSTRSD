@@ -199,7 +199,7 @@
     padding: .6rem .8rem;
     background: var(--chip-bg);
     border: 1px solid var(--chip-border);
-    border-radius: 14px;
+
     box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
     width: min(90%, 600px);
 }
@@ -252,7 +252,7 @@
     padding: .375rem .5rem;
     background: color-mix(in oklab, var(--bg) 92%, white);
     border: 1px solid var(--chip-border);
-    border-radius: 16px;
+
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
     backdrop-filter: saturate(1.4) blur(12px);
 }
@@ -263,7 +263,7 @@
     appearance: none;
     border: 0;
     background: transparent;
-    border-radius: 8px;
+
     padding: .65rem .25rem;
     min-height: 44px;
     font: 600 .85rem/1 'Clash Display', system-ui, sans-serif;
