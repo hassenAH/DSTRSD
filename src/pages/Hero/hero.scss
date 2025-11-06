@@ -1,27 +1,25 @@
 .hero {
   position: relative;
-  width: 100vw; // full viewport width
-  height: 100vh; // full viewport height
-  overflow: hidden; // hide overflow content
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-direction: column; // optional, for stacking children
+  flex-direction: column;
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 
   &__video {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    min-width: 100%;
-    min-height: 100%;
-    width: auto;
-    height: auto;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; // ensures full coverage while maintaining aspect ratio
+    object-position: center;
     z-index: -1;
-    transform: translate(-50%, -50%);
-    object-fit: cover;
   }
 
   &__overlay {
@@ -33,13 +31,13 @@
   }
 
   &__title {
-    font-size: 3rem;
+    font-size: clamp(2rem, 5vw, 3.5rem);
     font-weight: 700;
     margin-bottom: 1rem;
   }
 
   &__description {
-    font-size: 1.25rem;
+    font-size: clamp(1rem, 2vw, 1.25rem);
     font-weight: 300;
     max-width: 700px;
     margin: 0 auto;
@@ -57,6 +55,7 @@
   }
 }
 
+/* Hide video controls completely */
 video::-webkit-media-controls {
   display: none !important;
 }
