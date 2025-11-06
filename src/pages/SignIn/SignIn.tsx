@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./SignIn.module.scss";
 import { useAuth } from "../../utils/AuthContext";
 
-import heroSrc from "../../assets/images/login-hero1.webp";
+import heroSrc from "../../assets/images/login-hero.webp";
 
 type LocState = { state?: { from?: Location } };
 

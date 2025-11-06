@@ -1,39 +1,50 @@
+/* ===== overall page ===== */
 .login {
-    background: var(--bg, #f9fafb);
-    min-height: 100vh;
+    width: 100%;
+    /* not 100vw → avoids scrollbar width issues */
+    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    color: var(--ink, #090909);
+    background: var(--bg, #f9fafb);
+    padding: 0;
+    /* remove any internal padding */
+    margin: 0;
+    /* remove any external margin */
+    overflow: hidden;
 }
 
+/* ===== central card / form box ===== */
 .card {
     margin-bottom: 5%;
     width: 100%;
-    max-width: 550px;
-    min-height: 580px;
-    padding: 3rem 3rem;
+    /* constrain card so it fits comfortably in the 1/3 column */
+    max-width: 420px;
+    min-height: 520px;
+    padding: 2.5rem;
     display: grid;
-    gap: 2rem;
+    gap: 1.25rem;
     background: var(--panel, #fff);
     border: 1px solid var(--subtle, #e5e7eb);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    box-sizing: border-box;
 }
 
+/* title */
 .title {
     font-family: 'Clash Display', system-ui, sans-serif;
     font-weight: 600;
-    font-size: 3rem;
+    font-size: 2.4rem;
     text-align: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 }
 
+/* form fields */
 .field {
     display: grid;
     gap: 0.25rem;
-    font-size: 1.7rem;
-    margin-bottom: 2rem;
-
+    font-size: 1.1rem;
+    margin-bottom: 1.25rem;
 
     span {
         font-weight: 500;
@@ -44,63 +55,64 @@
         width: 100%;
         padding: 0.5rem;
         border: 1px solid var(--subtle, #e5e7eb);
-        border-radius: 0;
-        font-size: 1.5rem;
+        border-radius: 6px;
+        font-size: 1rem;
         outline: none;
+        background: #fff;
+        box-sizing: border-box;
 
         &:focus {
             border-color: var(--accent, #090909);
-            box-shadow: 0 0 0 2px rgba(9, 9, 9, 0.6);
+            box-shadow: 0 0 0 4px rgba(9, 9, 9, 0.06);
         }
     }
 }
 
+/* extras */
 .extra {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
+/* smaller checkbox style */
 .check {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 1.2rem;
+    font-size: 0.95rem;
     color: var(--muted, rgba(9, 9, 9, 0.6));
 }
 
-
 .check input[type="checkbox"] {
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
+    width: 20px;
+    height: 20px;
 }
 
+/* forgot button */
 .forgot {
     background: none;
     border: none;
     color: var(--accent, #090909);
-    font-size: 1rem;
+    font-size: 0.95rem;
     cursor: pointer;
     text-decoration: underline;
     padding: 0;
-
-    &:hover {
-        color: var(--hover, #111);
-    }
 }
 
+/* primary action */
 .loginBtn {
     padding: 0.75rem;
     font-weight: 800;
-    font-size: 1.2rem;
+    font-size: 1rem;
     background: var(--accent, #090909);
     color: #fff;
     border: 1px solid var(--accent, #090909);
     cursor: pointer;
     transition: background-color 0.2s ease;
     width: 100%;
+    border-radius: 6px;
 
     &:hover {
         background: var(--hover, #111111);
@@ -112,94 +124,72 @@
     }
 }
 
+/* error/helper */
 .error {
-    color: red;
-    margin-bottom: 1rem;
-    font-size: 1.2rem;
-}
-
-
-/* status text */
-.ok {
-    color: #0a7f2e;
-    margin: .25rem 0 .5rem;
+    color: #d32f2f;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
 }
 
 .helper {
     color: var(--muted);
     margin: .25rem 0 .75rem;
+    font-size: 0.95rem;
 }
 
-/* link-looking buttons */
-.linkBtn {
-    appearance: none;
-    background: transparent;
-    border: 0;
-    color: var(--ink);
-    text-decoration: underline;
-    cursor: pointer;
-    padding: .5rem 0;
-    font: 600 .95rem/1.2 system-ui, sans-serif;
-}
-
-/* OTP */
-.codeRow {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(44px, 1fr));
-    gap: clamp(.4rem, 1.6vw, .6rem);
-    margin: clamp(.5rem, 2vw, .8rem) 0;
-}
-
-.codeCell {
-    text-align: center;
-    font: 700 1.25rem/1 system-ui, sans-serif;
-    padding: .7rem 0;
-    border: 1px solid var(--subtle);
-    background: #fff;
-    outline: none;
-
-    &:focus {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 2px var(--ring);
-    }
-}
-
-/* --- Split layout: image left, form right --- */
+/* ===== split layout adjustments (image 2/3, form 1/3) ===== */
 .split {
-    width: 100%;
-    max-width: 1200px;
-    min-height: 100vh;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 2fr 1fr;
+    width: 100%;
+    height: 100vh;
+    margin: 0;
+    /* ensure no side gap */
+    padding: 0;
+    border: none;
+    box-sizing: border-box;
 }
 
+/* left image area */
 .left {
-    display: block;
+    margin: 0;
+    padding: 0;
+    border: none;
     overflow: hidden;
-    border-right: 1px solid var(--subtle, #e5e7eb);
 
     img {
+        display: block;
         width: 100%;
         height: 100%;
         object-fit: cover;
-        display: block;
-        user-select: none;
-        pointer-events: none;
     }
 }
 
+/* ===== Right form area ===== */
 .right {
-    display: grid;
-    place-items: center;
-    padding: 2rem;
+    margin: 0;
+    padding: 0;
+    /* previously had padding: 3rem */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
 }
 
-/* Keep it simple on small screens */
+/* small tweak so card doesn't feel cramped inside 1/3 column */
+.right .card {
+    width: 100%;
+    max-width: 380px;
+    /* tighter for visual balance */
+}
+
+/* ===== responsive fallback for narrow screens ===== */
 @media (max-width: 900px) {
     .split {
         grid-template-columns: 1fr;
     }
 
+    /* keep mobile simple: hide the image and let form fill the width */
     .left {
         display: none;
     }
@@ -207,17 +197,32 @@
     .right {
         padding: 1.25rem;
     }
+
+    .card {
+        max-width: 720px;
+        width: 100%;
+        min-height: auto;
+        padding: 1.5rem;
+    }
+
+    .title {
+        font-size: 1.65rem;
+    }
 }
 
-.resendRow {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    margin-top: .25rem;
+/* keep accessible focus styles */
+:focus {
+    outline: none;
+}
 
-    .linkBtn[disabled] {
-        opacity: .5;
-        cursor: not-allowed;
-        text-decoration: none;
+:focus-visible {
+    outline: 3px solid rgba(0, 123, 255, 0.25);
+    outline-offset: 3px;
+}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
     }
 }

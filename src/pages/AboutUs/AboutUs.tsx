@@ -111,34 +111,24 @@ export default function AboutUs({
                     <div ref={tilt2} className={styles.tiltWrap} style={{ transform: "rotateX(var(--rx)) rotateY(var(--ry))" }}>
                         <img src={imageSecondary} alt="Our culture & vibe" className={styles.photo} loading="lazy" />
                     </div>
-                    <span className={styles.badgeAlt}>Human-centered</span>
+
                 </div>
             </div>
 
             <article ref={cardRef} className={styles.card} role="article" aria-label="About content">
                 {/* Description 1 (your snippet allowed with rich markup) */}
                 <div className={styles.block}>
-                    <h2 className={styles.blockTitle}>
-                        {description1.title}
-                    </h2>
+
 
                     {/* Keep your original classes so you can paste your exact snippet if you want */}
                     <article className={styles.brandDescription}>
                         <p className={styles.descriptionText}>{description1.text}</p>
-                    </article>
-                </div>
-
-                <div className={styles.divider} aria-hidden />
-
-                {/* Description 2 */}
-                <div className={styles.block}>
-                    <h2 className={styles.blockTitle}>
-                        {description2.title}
-                    </h2>
-                    <article className={styles.brandDescription}>
                         <p className={styles.descriptionText}>{description2.text}</p>
                     </article>
+
                 </div>
+
+
 
 
             </article>
