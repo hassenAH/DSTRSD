@@ -7,7 +7,8 @@ import Footer from "./Footer/Footer";
 import Popup from "./components/popup/Popup";
 import join from "../assets/images/popup.svg"
 import { useProducts } from "../utils/ProductContext";
-import CategorySection from "./components/CategorieSection/CategorySection";
+
+
 export default function Home() {
   const [showPopup, setShowPopup] = useState(false);
   const { currentProduct, loading, error } = useProducts();

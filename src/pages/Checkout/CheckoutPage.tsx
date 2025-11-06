@@ -45,7 +45,7 @@ export default function CheckoutPage() {
         return 0;
     }, [promo, subtotal, shipping]);
 
-    const total = useMemo(() => subtotal - discount, [promo]);
+    const total = useMemo(() => subtotal - discount, [subtotal, discount]);
 
     const fmt = (n: number) => `${n.toFixed(2)}DT `;
 
