@@ -1,13 +1,16 @@
-// components/AddProductModal.tsx
-import React, { useMemo, useState, ChangeEvent, FormEvent, useEffect } from "react";
+// components/AddProduct.tsx
+import React, {
+  useMemo,
+  useState,
+  ChangeEvent,
+  FormEvent,
+  useEffect,
+  Fragment,
+} from "react";
 import styles from "./AddProduct.module.scss";
 import { useProducts } from "../../utils/ProductContext";
 import CategorySelect from "./CategorySelect";
-
-type AddModalProps = {
-  onAdd: (serverProduct: any) => void; // product from the server response
-  onCancel: () => void;
-};
+import type { CreateProductMultipart } from "../../utils/ProductContext";
 
 // align with your backend accepted sizes
 const AVAILABLE_SIZES = ["XS", "Small", "Medium", "Large", "X Large", "XXL"];
@@ -18,19 +21,23 @@ type DescriptionForm = {
   details: string[];
 };
 
-export default function AddProductModal({ onAdd, onCancel }: AddModalProps) {
+type Props = {
+  onAdd?: (serverProduct: any) => void;
+  onCancel?: () => void;
+};
+
+export default function AddProduct({ onAdd, onCancel }: Props) {
   const { createProductMultipart, loading, error } = useProducts();
 
   // ----- Form State -----
   const [title, setTitle] = useState("");
-  const [price, setPrice] = useState<string>(""); // user enters major units (e.g., 79)
-  const [stock, setStock] = useState<number>(0);
-  const [categoryId, setCategoryId] = useState<string>("");
-  const [sizes, setSizes] = useState<string[]>([]);
+  const [price, setPrice] = useState<string>("");
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [sizesSelected, setSizesSelected] = useState<Record<string, number>>({});
   const [colorsInput, setColorsInput] = useState<string>("");
 
   const colors = useMemo(
-    () => colorsInput.split(",").map(s => s.trim()).filter(Boolean),
+    () => colorsInput.split(",").map((s) => s.trim()).filter(Boolean),
     [colorsInput]
   );
 
@@ -40,35 +47,36 @@ export default function AddProductModal({ onAdd, onCancel }: AddModalProps) {
     details: [""],
   });
 
-  const [files, setFiles] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
+  // Per-color files and previews
+  const [colorFiles, setColorFiles] = useState<Record<string, File[]>>({});
+  const [colorPreviews, setColorPreviews] = useState<Record<string, string[]>>({});
   const [errMsg, setErrMsg] = useState<string>("");
 
-  // ----- File preview cleanup -----
+  // Keep the files/previews in sync with the colors list
   useEffect(() => {
-    return () => previews.forEach((url) => URL.revokeObjectURL(url));
-  }, [previews]);
-
-  // ----- Handlers -----
-  const handleSizeChange = (size: string, checked: boolean) => {
-    setSizes(prev => checked ? Array.from(new Set([...prev, size])) : prev.filter(s => s !== size));
-  };
-
-  const handleAddDetail = () => setDescription(d => ({ ...d, details: [...d.details, ""] }));
-  const handleDetailChange = (idx: number, value: string) =>
-    setDescription(d => {
-      const next = [...d.details];
-      next[idx] = value;
-      return { ...d, details: next };
+    setColorFiles((prev) => {
+      const next = { ...prev };
+      colors.forEach((c) => { if (!next[c]) next[c] = []; });
+      Object.keys(next).forEach((k) => { if (!colors.includes(k)) delete next[k]; });
+      return next;
     });
-  const handleRemoveDetail = (idx: number) =>
-    setDescription(d => {
-      const next = d.details.slice();
-      next.splice(idx, 1);
-      return { ...d, details: next.length ? next : [""] };
+    setColorPreviews((prev) => {
+      const next = { ...prev };
+      colors.forEach((c) => { if (!next[c]) next[c] = []; });
+      Object.keys(next).forEach((k) => { if (!colors.includes(k)) delete next[k]; });
+      return next;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [colorsInput]);
 
-  // helper at top (near imports)
+  // Clean URLs on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(colorPreviews).flat().forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [colorPreviews]);
+
+  // ----- Helpers -----
   const formatBytes = (n: number) => {
     if (!n) return "0 B";
     const k = 1024, sizes = ["B", "KB", "MB", "GB", "TB"];
@@ -76,76 +84,130 @@ export default function AddProductModal({ onAdd, onCancel }: AddModalProps) {
     return `${(n / Math.pow(k, i)).toFixed(i ? 1 : 0)} ${sizes[i]}`;
   };
 
-  // replace handleFilesSelect
-  const handleFilesSelect = (e: ChangeEvent<HTMLInputElement>) => {
+  const toggleSize = (size: string, enabled: boolean) => {
+    setSizesSelected((prev) => {
+      const next = { ...prev };
+      if (enabled) {
+        if (!next[size]) next[size] = 0;
+      } else {
+        delete next[size];
+      }
+      return next;
+    });
+  };
+
+  const setSizeStock = (size: string, stock: number) =>
+    setSizesSelected((prev) => ({ ...prev, [size]: Math.max(0, Math.floor(stock || 0)) }));
+
+  const handleColorFilesSelect = (color: string, e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-    const selected = Array.from(e.target.files);
-
-    setFiles(prev => [...prev, ...selected]);
-    setPreviews(prev => [
-      ...prev,
-      ...selected.map(f => URL.createObjectURL(f)),
-    ]);
-
-    // allow choosing the same file again
+    const added = Array.from(e.target.files);
+    setColorFiles((prev) => {
+      const next = { ...(prev || {}) };
+      next[color] = (next[color] || []).concat(added);
+      return next;
+    });
+    setColorPreviews((prev) => {
+      const next = { ...(prev || {}) };
+      next[color] = (next[color] || []).concat(added.map((f) => URL.createObjectURL(f)));
+      return next;
+    });
     e.currentTarget.value = "";
   };
 
-  // replace removeImageAt
-  const removeImageAt = (i: number) => {
-    setFiles(prev => {
-      const copy = prev.slice();
-      copy.splice(i, 1);
-      return copy;
+  const removeColorFile = (color: string, index: number) => {
+    setColorFiles((prev) => {
+      const next = { ...(prev || {}) };
+      const arr = next[color] ? next[color].slice() : [];
+      if (arr[index]) arr.splice(index, 1);
+      next[color] = arr;
+      return next;
     });
-    setPreviews(prev => {
-      const copy = prev.slice();
-      const [removed] = copy.splice(i, 1);
+    setColorPreviews((prev) => {
+      const next = { ...(prev || {}) };
+      const arr = next[color] ? next[color].slice() : [];
+      const [removed] = arr.splice(index, 1);
       if (removed) URL.revokeObjectURL(removed);
-      return copy;
+      next[color] = arr;
+      return next;
     });
   };
 
-  // Minimal client-side validation
+  // Description helpers
+  const handleAddDetail = () =>
+    setDescription((d) => ({ ...d, details: [...d.details, ""] }));
+
+  const handleDetailChange = (idx: number, value: string) =>
+    setDescription((d) => {
+      const next = [...d.details];
+      next[idx] = value;
+      return { ...d, details: next };
+    });
+
+  const handleRemoveDetail = (idx: number) =>
+    setDescription((d) => {
+      const next = d.details.slice();
+      next.splice(idx, 1);
+      return { ...d, details: next.length ? next : [""] };
+    });
+
+  // Validation
   const validate = () => {
     if (!title.trim()) return "Title is required.";
     if (!price || isNaN(Number(price))) return "Valid price is required.";
-    if (!categoryId || categoryId.length < 10) return "Valid categoryId (ObjectId) is required.";
-    if (files.length === 0) return "At least one product image is required.";
+    if (!categoryIds.length) return "Please pick at least one category.";
+    if (!colors.length) return "At least one color is required.";
+    const hasImages = colors.some((c) => (colorFiles[c] || []).length > 0);
+    if (!hasImages) return "Upload at least one image for one of the colors.";
     if (!description.intro.trim()) return "Description intro is required.";
     if (!description.detailsTitle.trim()) return "Description detailsTitle is required.";
     return "";
   };
 
+  // Submit
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setErrMsg("");
-
     const v = validate();
     if (v) return setErrMsg(v);
 
-    // ⚠️ PRICE UNITS:
-    // If your backend expects "DT" as major units, send Number(price).
-    // If it expects "cents", send Math.round(Number(price) * 100).
-    const priceToSend = Number(price); // or Math.round(Number(price) * 100)
+    const sizesPayload = Object.entries(sizesSelected).map(([name, stock]) => ({
+      name,
+      stock,
+    }));
+
+    const payload: CreateProductMultipart = {
+      title: title.trim(),
+      price: Number(price),
+      categories: categoryIds,    // <- aligned with backend
+      sizes: sizesPayload,
+      colors,                     // names only; context converts to [{name}]
+      description: {
+        intro: description.intro,
+        detailsTitle: description.detailsTitle,
+        details: description.details.filter(Boolean),
+      },
+      colorFiles: {},
+    };
+
+    colors.forEach((c) => {
+      if ((colorFiles[c] || []).length) {
+        payload.colorFiles![c] = colorFiles[c];
+      }
+    });
 
     try {
-      const created = await createProductMultipart({
-        title,
-        price: priceToSend,
-        stock,
-        categoryId,
-        sizes,
-        colors,
-        description: {
-          intro: description.intro,
-          detailsTitle: description.detailsTitle,
-          details: description.details.filter(Boolean),
-        },
-        images: files,
-      });
-
-      onAdd(created);
+      const created = await createProductMultipart(payload);
+      onAdd?.(created);
+      // Optional: clear form
+      setTitle("");
+      setPrice("");
+      setCategoryIds([]);
+      setSizesSelected({});
+      setColorsInput("");
+      setDescription({ intro: "", detailsTitle: "Product Details", details: [""] });
+      setColorFiles({});
+      setColorPreviews({});
     } catch (err: any) {
       setErrMsg(err.message || "Something went wrong");
     }
@@ -162,7 +224,7 @@ export default function AddProductModal({ onAdd, onCancel }: AddModalProps) {
         <input
           type="text"
           value={title}
-          onChange={e => setTitle(e.target.value)}
+          onChange={(e) => setTitle(e.target.value)}
           placeholder="Counterfeit - Black"
         />
 
@@ -174,46 +236,50 @@ export default function AddProductModal({ onAdd, onCancel }: AddModalProps) {
               min={0}
               step="0.01"
               value={price}
-              onChange={e => setPrice(e.target.value)}
+              onChange={(e) => setPrice(e.target.value)}
               placeholder="79"
             />
           </div>
 
           <div>
-            <label>Stock</label>
-            <input
-              type="number"
-              min={0}
-              value={stock}
-              onChange={e => setStock(Number(e.target.value))}
-              placeholder="20"
-            />
+            <label>Categories</label>
+            <CategorySelect multiple value={categoryIds} onChange={setCategoryIds} size={6} />
           </div>
         </div>
 
-        <label>Category</label>
-        <CategorySelect value={categoryId} onChange={setCategoryId} />
-
-        <label>Sizes</label>
-        <div className={styles.sizesCheckbox}>
-          {AVAILABLE_SIZES.map(size => (
-            <label key={size} className={styles.checkbox}>
-              <input
-                type="checkbox"
-                checked={sizes.includes(size)}
-                onChange={e => handleSizeChange(size, e.target.checked)}
-              />
-              <span className={styles.checkmark} />
-              {size}
-            </label>
-          ))}
+        <label>Sizes (enable and set stock)</label>
+        <div className={styles.sizesGrid}>
+          {AVAILABLE_SIZES.map((size) => {
+            const enabled = Object.prototype.hasOwnProperty.call(sizesSelected, size);
+            return (
+              <div className={styles.sizeRow} key={size}>
+                <label className={styles.checkbox}>
+                  <input
+                    type="checkbox"
+                    checked={!!enabled}
+                    onChange={(e) => toggleSize(size, e.target.checked)}
+                  />
+                  <span className={styles.checkmark} />
+                  {size}
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={enabled ? String(sizesSelected[size]) : ""}
+                  onChange={(e) => setSizeStock(size, Number(e.target.value))}
+                  placeholder="stock"
+                  disabled={!enabled}
+                />
+              </div>
+            );
+          })}
         </div>
 
         <label>Colors (comma separated)</label>
         <input
           type="text"
           value={colorsInput}
-          onChange={e => setColorsInput(e.target.value)}
+          onChange={(e) => setColorsInput(e.target.value)}
           placeholder="Black, White"
         />
 
@@ -224,7 +290,7 @@ export default function AddProductModal({ onAdd, onCancel }: AddModalProps) {
         <textarea
           className={styles.textarea}
           value={description.intro}
-          onChange={e => setDescription(d => ({ ...d, intro: e.target.value }))}
+          onChange={(e) => setDescription((d) => ({ ...d, intro: e.target.value }))}
           placeholder="The Counterfeit Tee carries a vandalized 50DT note across the chest..."
         />
 
@@ -232,7 +298,7 @@ export default function AddProductModal({ onAdd, onCancel }: AddModalProps) {
         <input
           type="text"
           value={description.detailsTitle}
-          onChange={e => setDescription(d => ({ ...d, detailsTitle: e.target.value }))}
+          onChange={(e) => setDescription((d) => ({ ...d, detailsTitle: e.target.value }))}
           placeholder="Product Details"
         />
 
@@ -243,7 +309,7 @@ export default function AddProductModal({ onAdd, onCancel }: AddModalProps) {
               <input
                 type="text"
                 value={item}
-                onChange={e => handleDetailChange(i, e.target.value)}
+                onChange={(e) => handleDetailChange(i, e.target.value)}
                 placeholder={`Detail #${i + 1}`}
               />
               <button
@@ -264,44 +330,70 @@ export default function AddProductModal({ onAdd, onCancel }: AddModalProps) {
 
         <div className={styles.hr} />
 
-        <h3>Images</h3>
+        <h3>Images (per color)</h3>
+        {!colors.length && (
+          <p className={styles.hint}>Enter colors above to upload images for each color.</p>
+        )}
 
-        <div className={styles.uploader}>
-          {/* Accessible dropzone */}
-          <label className={styles.dropzone}>
-            <input type="file" accept="image/*" multiple onChange={handleFilesSelect} />
-            <div className={styles.dzText}>
-              <strong>Click to upload</strong> or drag & drop images
-            </div>
-          </label>
-
-          {/* Gallery */}
-          <div className={styles.gallery}>
-            {previews.map((src, i) => (
-              <div key={src} className={styles.tile}>
-                <img className={styles.thumb} src={src} alt={`preview-${i}`} />
-                <div className={styles.actions}>
-                  <button
-                    type="button"
-                    onClick={() => removeImageAt(i)}
-                    aria-label="Remove image"
-                    title="Remove"
-                  >
-                    🗑️
-                  </button>
-                </div>
-                <div className={styles.meta}>
-                  <span className={styles.name}>{files[i]?.name || `image-${i + 1}`}</span>
-                  <span className={styles.size}>{files[i] ? formatBytes(files[i].size) : "—"}</span>
-                </div>
+        {colors.map((c) => (
+          <Fragment key={c}>
+            <div className={styles.colorSection}>
+              <div className={styles.colorHeader}>
+                <strong>{c}</strong>
+                <small className={styles.hint}>Upload images for {c} (multiple allowed)</small>
               </div>
-            ))}
-          </div>
-        </div>
+              <label className={styles.dropzoneSmall}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => handleColorFilesSelect(c, e)}
+                />
+                <div className={styles.dzTextSmall}>Click to choose images for {c}</div>
+              </label>
 
+              <div className={styles.gallerySmall}>
+                {(colorPreviews[c] || []).map((src, i) => (
+                  <div key={src} className={styles.tileSmall}>
+                    <img className={styles.thumb} src={src} alt={`${c}-preview-${i}`} />
+                    <div className={styles.actions}>
+                      <button
+                        type="button"
+                        onClick={() => removeColorFile(c, i)}
+                        aria-label={`Remove ${c} image ${i + 1}`}
+                        title="Remove"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                    <div className={styles.meta}>
+                      <span className={styles.name}>
+                        {(colorFiles[c] && colorFiles[c][i]?.name) || `image-${i + 1}`}
+                      </span>
+                      <span className={styles.size}>
+                        {colorFiles[c] && colorFiles[c][i]
+                          ? formatBytes(colorFiles[c][i].size)
+                          : "—"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Fragment>
+        ))}
 
         <div className={styles.modalActions}>
-          <button type="submit" disabled={loading || !title.trim() || !price || !categoryId || !files.length}>
+          <button
+            type="submit"
+            disabled={
+              loading ||
+              !title.trim() ||
+              !price ||
+              !categoryIds.length ||
+              colors.length === 0
+            }
+          >
             {loading ? "Saving..." : "Add Product"}
           </button>
 

@@ -1,320 +1,456 @@
 // components/EditProductModal.tsx
-import React, { useEffect, useMemo, useState, ChangeEvent, FormEvent } from "react";
+import React, {
+    useEffect,
+    useMemo,
+    useState,
+    ChangeEvent,
+    FormEvent,
+    Fragment,
+} from "react";
 import styles from "./EditProduct.module.scss";
-import type { Product } from "../../utils/ProductContext"; // use your context Product
-import type { UpdateProductInput } from "../../utils/ProductContext";
+import type { Product, UpdateProductInput } from "../../utils/ProductContext";
 import CategorySelect from "./CategorySelect";
-
-type EditModalProps = {
-  product: Product;
-  // Accepts an extended update payload; parent can decide to call JSON PATCH or multipart
-  onSave: (updated: UpdateProductInput & {
-    imagesFiles?: File[];        // newly added files
-    removeImages?: string[];     // existing image URLs (or ids) to remove
-    categoryId?: string;         // convenience if your API expects categoryId
-  }) => void | Promise<void>;
-  onCancel: () => void;
-};
 
 const AVAILABLE_SIZES = ["XS", "Small", "Medium", "Large", "X Large", "XXL"];
 
-export default function EditProductModal({ product, onSave, onCancel }: EditModalProps) {
-  // ---- Scalar fields ----
-  const [title, setTitle] = useState(product.title);
-  // show price in major units if you stored cents; adjust to your storage
-  const [price, setPrice] = useState<string>(String(product.price));
-  const [stock, setStock] = useState<number>(product.stock ?? 0);
-  const [categoryId, setCategoryId] = useState<string>(product.category?._id || "");
+type EditModalProps = {
+    product: Product;
+    onSave: (
+        updated: UpdateProductInput & {
+            colorFiles?: Record<string, File[]>;
+            removeImages?: Record<string, string[]>;
+            categoryIds?: string[];
+        }
+    ) => void | Promise<void>;
+    onCancel: () => void;
+};
 
-  // ---- Sizes & Colors ----
-  const [sizes, setSizes] = useState<string[]>(product.sizes || []);
-  const [colorsInput, setColorsInput] = useState<string>((product.colors || []).join(", "));
-  const colors = useMemo(
-    () => colorsInput.split(",").map(s => s.trim()).filter(Boolean),
-    [colorsInput]
-  );
+export default function EditProductModal({
+    product,
+    onSave,
+    onCancel,
+}: EditModalProps) {
+    // ---- Scalars ----
+    const [title, setTitle] = useState(product.title);
+    const [price, setPrice] = useState(String(product.price));
+    const [categoryIds, setCategoryIds] = useState<string[]>(
+        product.categories?.map((c) => c) || []
+    );
 
-  // ---- Description ----
-  const [intro, setIntro] = useState<string>(product.description?.intro || "");
-  const [detailsTitle, setDetailsTitle] = useState<string>(product.description?.detailsTitle || "Product Details");
-  const [details, setDetails] = useState<string[]>(
-    product.description?.details?.length ? product.description.details : [""]
-  );
+    // ---- Sizes ----
+    const [sizesSelected, setSizesSelected] = useState<Record<string, number>>(
+        () =>
+            (product.sizes || []).reduce((acc, s: any) => {
+                if (typeof s === "object" && s.name) acc[s.name] = s.stock ?? 0;
+                else if (typeof s === "string") acc[s] = 0;
+                return acc;
+            }, {} as Record<string, number>)
+    );
 
-  // ---- Images: existing + new files ----
-  const [existingImages, setExistingImages] = useState<string[]>(product.images || []);
-  const [removeImages, setRemoveImages] = useState<string[]>([]);
-  const [newFiles, setNewFiles] = useState<File[]>([]);
-  const [newPreviews, setNewPreviews] = useState<string[]>([]);
+    // ---- Colors ----
+    const [colorsInput, setColorsInput] = useState(
+        (product.colors || []).map((c: any) => c.name || c).join(", ")
+    );
+    const colors = useMemo(
+        () => colorsInput.split(",").map((s) => s.trim()).filter(Boolean),
+        [colorsInput]
+    );
 
-  // cleanup previews
-  useEffect(() => {
-    return () => newPreviews.forEach(url => URL.revokeObjectURL(url));
-  }, [newPreviews]);
+    // ---- Description ----
+    const [intro, setIntro] = useState(product.description?.intro || "");
+    const [detailsTitle, setDetailsTitle] = useState(
+        product.description?.detailsTitle || "Product Details"
+    );
+    const [details, setDetails] = useState(
+        product.description?.details?.length ? product.description.details : [""]
+    );
 
-  const toggleSize = (size: string, checked: boolean) => {
-    setSizes(prev => checked ? Array.from(new Set([...prev, size])) : prev.filter(s => s !== size));
-  };
+    // ---- Color images ----
+    const [colorFiles, setColorFiles] = useState<Record<string, File[]>>({});
+    const [colorPreviews, setColorPreviews] = useState<Record<string, string[]>>(
+        {}
+    );
+    const [existingColorImages, setExistingColorImages] = useState<
+        Record<string, string[]>
+    >(
+        () =>
+            (product.colors || []).reduce((acc, colorVariant: any) => {
+                acc[colorVariant.name || colorVariant] = colorVariant.images || [];
+                return acc;
+            }, {} as Record<string, string[]>)
+    );
 
-  const addDetail = () => setDetails(prev => [...prev, ""]);
-  const updateDetailAt = (i: number, v: string) =>
-    setDetails(prev => prev.map((d, idx) => (idx === i ? v : d)));
-  const removeDetailAt = (i: number) => {
-    setDetails(prev => {
-      const copy = prev.slice();
-      copy.splice(i, 1);
-      return copy.length ? copy : [""];
-    });
-  };
+    const [removeImages, setRemoveImages] = useState<Record<string, string[]>>({});
 
-  // helper (place near top)
-  const formatBytes = (n: number) => {
-    if (!n) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB", "TB"];
-    const i = Math.floor(Math.log(n) / Math.log(k));
-    return `${(n / Math.pow(k, i)).toFixed(i ? 1 : 0)} ${sizes[i]}`;
-  };
+    // ---- Clean up previews ----
+    useEffect(() => {
+        return () => {
+            Object.values(colorPreviews)
+                .flat()
+                .forEach((url) => URL.revokeObjectURL(url));
+        };
+    }, [colorPreviews]);
 
-  const handleAddFiles = (e: ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    const selected = Array.from(e.target.files);
+    // ---- Maintain color keys ----
+    useEffect(() => {
+        setColorFiles((prev) => {
+            const next = { ...prev };
+            colors.forEach((c) => {
+                if (!next[c]) next[c] = [];
+            });
+            Object.keys(next).forEach((k) => {
+                if (!colors.includes(k)) delete next[k];
+            });
+            return next;
+        });
+        setColorPreviews((prev) => {
+            const next = { ...prev };
+            colors.forEach((c) => {
+                if (!next[c]) next[c] = [];
+            });
+            Object.keys(next).forEach((k) => {
+                if (!colors.includes(k)) delete next[k];
+            });
+            return next;
+        });
+    }, [colorsInput]);
 
-    setNewFiles(prev => [...prev, ...selected]);
-    setNewPreviews(prev => [
-      ...prev,
-      ...selected.map(f => URL.createObjectURL(f))
-    ]);
-
-    // allow selecting the same file twice if needed
-    e.currentTarget.value = "";
-  };
-
-  const removeNewImageAt = (i: number) => {
-    setNewFiles(prev => {
-      const copy = prev.slice();
-      copy.splice(i, 1);
-      return copy;
-    });
-    setNewPreviews(prev => {
-      const copy = prev.slice();
-      const [removed] = copy.splice(i, 1);
-      if (removed) URL.revokeObjectURL(removed);
-      return copy;
-    });
-  };
-
-
-  const removeExistingImage = (url: string) => {
-    setExistingImages(prev => prev.filter(x => x !== url));
-    setRemoveImages(prev => Array.from(new Set([...prev, url])));
-  };
-
-
-
-  const validate = () => {
-    if (!title.trim()) return "Title is required.";
-    if (!price || isNaN(Number(price))) return "Valid price is required.";
-    if (!intro.trim()) return "Description intro is required.";
-    return "";
-  };
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    const v = validate();
-    if (v) {
-      alert(v);
-      return;
-    }
-
-    // ⚠️ If your backend expects cents, use Math.round(Number(price) * 100)
-    const priceToSend = Number(price);
-
-    const payload: UpdateProductInput & {
-      imagesFiles?: File[];
-      removeImages?: string[];
-      categoryId?: string;
-    } = {
-      title,
-      price: priceToSend,
-      stock,
-      sizes,
-      colors,
-      description: {
-        intro,
-        detailsTitle,
-        details: details.filter(Boolean),
-      },
-      // keep current image array if your JSON PATCH supports it
-      // or let backend compute it from removeImages + imagesFiles
-      images: existingImages,
-      ...(categoryId ? { category: { _id: categoryId, name: product.category?.name || "" } } : {}),
-      imagesFiles: newFiles.length ? newFiles : undefined,
-      removeImages: removeImages.length ? removeImages : undefined,
-      ...(categoryId ? { categoryId } : {}), // convenience if your API reads categoryId
+    // ---- Helpers ----
+    const formatBytes = (n: number) => {
+        if (!n) return "0 B";
+        const k = 1024;
+        const sizes = ["B", "KB", "MB", "GB"];
+        const i = Math.floor(Math.log(n) / Math.log(k));
+        return `${(n / Math.pow(k, i)).toFixed(i ? 1 : 0)} ${sizes[i]}`;
     };
 
-    onSave(payload);
-  };
+    const toggleSize = (size: string, enabled: boolean) => {
+        setSizesSelected((prev) => {
+            const next = { ...prev };
+            if (enabled) {
+                if (!next[size]) next[size] = 0;
+            } else {
+                delete next[size];
+            }
+            return next;
+        });
+    };
 
-  return (
-    <div className={styles.modal} role="dialog" aria-modal="true">
-      <form className={styles.modalContent} onSubmit={submit}>
-        <h2>Edit “{product.title}”</h2>
+    const setSizeStock = (size: string, stock: number) =>
+        setSizesSelected((prev) => ({ ...prev, [size]: Math.max(0, stock || 0) }));
 
-        <label>Name</label>
-        <input value={title} onChange={e => setTitle(e.target.value)} />
+    // ---- Color images handlers ----
+    const handleColorFilesSelect = (
+        color: string,
+        e: ChangeEvent<HTMLInputElement>
+    ) => {
+        if (!e.target.files) return;
+        const added = Array.from(e.target.files);
+        setColorFiles((prev) => {
+            const next = { ...prev };
+            next[color] = (next[color] || []).concat(added);
+            return next;
+        });
+        setColorPreviews((prev) => {
+            const next = { ...prev };
+            next[color] = (next[color] || []).concat(
+                added.map((f) => URL.createObjectURL(f))
+            );
+            return next;
+        });
+        e.currentTarget.value = "";
+    };
 
-        <div className={styles.grid2}>
-          <div>
-            <label>Price (TND)</label>
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              value={price}
-              onChange={e => setPrice(e.target.value)}
-            />
-          </div>
+    const removeColorFile = (color: string, index: number) => {
+        setColorFiles((prev) => {
+            const next = { ...prev };
+            const arr = next[color] ? next[color].slice() : [];
+            if (arr[index]) arr.splice(index, 1);
+            next[color] = arr;
+            return next;
+        });
+        setColorPreviews((prev) => {
+            const next = { ...prev };
+            const arr = next[color] ? next[color].slice() : [];
+            const [removed] = arr.splice(index, 1);
+            if (removed) URL.revokeObjectURL(removed);
+            next[color] = arr;
+            return next;
+        });
+    };
 
-          <div>
-            <label>Stock</label>
-            <input
-              type="number"
-              min={0}
-              value={stock}
-              onChange={e => setStock(Number(e.target.value))}
-            />
-          </div>
-        </div>
+    const removeExistingColorImage = (color: string, url: string) => {
+        setExistingColorImages((prev) => {
+            const next = { ...prev };
+            next[color] = (next[color] || []).filter((x) => x !== url);
+            return next;
+        });
+        setRemoveImages((prev) => {
+            const next = { ...prev };
+            next[color] = Array.from(new Set([...(next[color] || []), url]));
+            return next;
+        });
+    };
 
-        <label>Category</label>
-        <CategorySelect value={categoryId} onChange={setCategoryId} />
+    // ---- Description helpers ----
+    const addDetail = () => setDetails((prev) => [...prev, ""]);
+    const updateDetailAt = (i: number, v: string) =>
+        setDetails((prev) => prev.map((d, idx) => (idx === i ? v : d)));
+    const removeDetailAt = (i: number) =>
+        setDetails((prev) => {
+            const copy = prev.slice();
+            copy.splice(i, 1);
+            return copy.length ? copy : [""];
+        });
 
-        <label>Sizes</label>
-        <div className={styles.sizesCheckbox}>
-          {AVAILABLE_SIZES.map(size => (
-            <label key={size} className={styles.checkbox}>
-              <input
-                type="checkbox"
-                checked={sizes.includes(size)}
-                onChange={e => toggleSize(size, e.target.checked)}
-              />
-              <span className={styles.checkmark} />
-              {size}
-            </label>
-          ))}
-        </div>
+    // ---- Validation ----
+    const validate = () => {
+        if (!title.trim()) return "Title is required.";
+        if (!price || isNaN(Number(price))) return "Valid price is required.";
+        if (!intro.trim()) return "Intro description is required.";
+        if (!categoryIds.length) return "Select at least one category.";
+        return "";
+    };
 
-        <label>Colors (comma separated)</label>
-        <input
-          value={colorsInput}
-          onChange={e => setColorsInput(e.target.value)}
-          placeholder="Black, White"
-        />
+    // ---- Submit ----
+    const submit = (e: FormEvent) => {
+        e.preventDefault();
+        const v = validate();
+        if (v) return alert(v);
 
-        <div className={styles.hr} />
+        const sizesPayload = Object.entries(sizesSelected).map(([name, stock]) => ({
+            name,
+            stock,
+        }));
 
-        <h3>Description</h3>
-        <label>Intro</label>
-        <textarea
-          className={styles.textarea}
-          value={intro}
-          onChange={e => setIntro(e.target.value)}
-        />
+        const payload: UpdateProductInput & {
+            colorFiles?: Record<string, File[]>;
+            removeImages?: Record<string, string[]>;
+            categoryIds?: string[];
+        } = {
+            title,
+            price: Number(price),
+            stock: sizesPayload.reduce((s, it) => s + (it.stock || 0), 0),
+            sizes: sizesPayload,
+            colors: colors.map((c) => ({
+                name: c,
+                images: existingColorImages[c] || [],
+            })),
+            description: {
+                intro,
+                detailsTitle,
+                details: details.filter(Boolean),
+            },
+            colorFiles,
+            removeImages,
+            categoryIds,
+        };
 
-        <label>Details Title</label>
-        <input
-          value={detailsTitle}
-          onChange={e => setDetailsTitle(e.target.value)}
-        />
+        onSave(payload);
+    };
 
-        <label>Details (bullets)</label>
-        <div className={styles.detailsList}>
-          {details.map((d, i) => (
-            <div key={i} className={styles.detailRow}>
-              <input
-                value={d}
-                onChange={e => updateDetailAt(i, e.target.value)}
-                placeholder={`Detail #${i + 1}`}
-              />
-              <button type="button" className={styles.iconBtn} onClick={() => removeDetailAt(i)} title="Remove">
-                ✕
-              </button>
-            </div>
-          ))}
-          <button type="button" className={styles.addDetailBtn} onClick={addDetail}>
-            + Add Detail
-          </button>
-        </div>
+    return (
+        <div className={styles.modal} role="dialog" aria-modal="true">
+            <form className={styles.modalContent} onSubmit={submit}>
+                <h2>Edit “{product.title}”</h2>
 
-        <div className={styles.hr} />
+                <label>Title</label>
+                <input value={title} onChange={(e) => setTitle(e.target.value)} />
 
-        <h3>Images</h3>
+                <div className={styles.grid2}>
+                    <div>
+                        <label>Price (TND)</label>
+                        <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={price}
+                            onChange={(e) => setPrice(e.target.value)}
+                        />
+                    </div>
 
-        {/* Uploader */}
-        <div className={styles.uploader}>
-          {/* Accessible dropzone (label wraps input) */}
-          <label className={styles.dropzone}>
-            <input type="file" accept="image/*" multiple onChange={handleAddFiles} />
-            <div className={styles.dzText}>
-              <strong>Click to upload</strong> or drag & drop images
-            </div>
-          </label>
+                    <div>
+                        <label>Categories</label>
+                        <CategorySelect multiple value={categoryIds} onChange={setCategoryIds} size={6} />
 
-          {/* Gallery grid */}
-          <div className={styles.gallery}>
-            {/* Existing server images */}
-            {existingImages.map((url) => (
-              <div key={`exist-${url}`} className={styles.tile}>
-                <img className={styles.thumb} src={url} alt="product" />
-                <div className={styles.actions}>
-                  <button
-                    type="button"
-                    onClick={() => removeExistingImage(url)}
-                    aria-label="Remove image"
-                    title="Remove"
-                  >
-                    🗑️
-                  </button>
+                    </div>
                 </div>
-                <div className={styles.meta}>
-                  <span className={styles.name}>Existing</span>
-                  <span className={styles.size}>—</span>
-                </div>
-              </div>
-            ))}
 
-            {/* Newly added (local) files */}
-            {newPreviews.map((src, i) => (
-              <div key={`new-${src}`} className={styles.tile}>
-                <img className={styles.thumb} src={src} alt={`preview-${i}`} />
-                <div className={styles.actions}>
-                  <button
-                    type="button"
-                    onClick={() => removeNewImageAt(i)}
-                    aria-label="Remove image"
-                    title="Remove"
-                  >
-                    Remove
-                  </button>
+                <label>Sizes (enable and set stock)</label>
+                <div className={styles.sizesGrid}>
+                    {AVAILABLE_SIZES.map((size) => {
+                        const enabled = Object.prototype.hasOwnProperty.call(
+                            sizesSelected,
+                            size
+                        );
+                        return (
+                            <div className={styles.sizeRow} key={size}>
+                                <label className={styles.checkbox}>
+                                    <input
+                                        type="checkbox"
+                                        checked={!!enabled}
+                                        onChange={(e) => toggleSize(size, e.target.checked)}
+                                    />
+                                    <span className={styles.checkmark} />
+                                    {size}
+                                </label>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    value={enabled ? String(sizesSelected[size]) : ""}
+                                    onChange={(e) => setSizeStock(size, Number(e.target.value))}
+                                    placeholder="stock"
+                                    disabled={!enabled}
+                                />
+                            </div>
+                        );
+                    })}
                 </div>
-                <div className={styles.meta}>
-                  <span className={styles.name}>{newFiles[i]?.name || `image-${i + 1}`}</span>
-                  <span className={styles.size}>{newFiles[i] ? formatBytes(newFiles[i].size) : "—"}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
-        <div className={styles.modalActions}>
-          <button type="submit">Save</button>
-          <button type="button" onClick={onCancel} className={styles.secondaryBtn}>
-            Cancel
-          </button>
+                <label>Colors (comma separated)</label>
+                <input
+                    value={colorsInput}
+                    onChange={(e) => setColorsInput(e.target.value)}
+                    placeholder="Black, White"
+                />
+
+                <div className={styles.hr} />
+                <h3>Description</h3>
+
+                <label>Intro</label>
+                <textarea
+                    className={styles.textarea}
+                    value={intro}
+                    onChange={(e) => setIntro(e.target.value)}
+                />
+
+                <label>Details Title</label>
+                <input
+                    value={detailsTitle}
+                    onChange={(e) => setDetailsTitle(e.target.value)}
+                />
+
+                <label>Details (bullets)</label>
+                <div className={styles.detailsList}>
+                    {details.map((d, i) => (
+                        <div key={i} className={styles.detailRow}>
+                            <input
+                                value={d}
+                                onChange={(e) => updateDetailAt(i, e.target.value)}
+                                placeholder={`Detail #${i + 1}`}
+                            />
+                            <button
+                                type="button"
+                                className={styles.iconBtn}
+                                onClick={() => removeDetailAt(i)}
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    ))}
+                    <button
+                        type="button"
+                        className={styles.addDetailBtn}
+                        onClick={addDetail}
+                    >
+                        + Add Detail
+                    </button>
+                </div>
+
+                <div className={styles.hr} />
+                <h3>Images (per color)</h3>
+
+                {colors.map((c) => (
+                    <Fragment key={c}>
+                        <div className={styles.colorSection}>
+                            <div className={styles.colorHeader}>
+                                <strong>{c}</strong>
+                                <small className={styles.hint}>
+                                    Upload images for {c} (multiple allowed)
+                                </small>
+                            </div>
+
+                            {/* Existing color images */}
+                            <div className={styles.gallerySmall}>
+                                {(existingColorImages[c] || []).map((url) => (
+                                    <div key={url} className={styles.tileSmall}>
+                                        <img className={styles.thumb} src={url} alt={`${c}-img`} />
+                                        <div className={styles.actions}>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeExistingColorImage(c, url)}
+                                                title="Remove"
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
+                                        <div className={styles.meta}>
+                                            <span className={styles.name}>Existing</span>
+                                            <span className={styles.size}>—</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Upload new ones */}
+                            <label className={styles.dropzoneSmall}>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={(e) => handleColorFilesSelect(c, e)}
+                                />
+                                <div className={styles.dzTextSmall}>
+                                    Click to choose images for {c}
+                                </div>
+                            </label>
+
+                            <div className={styles.gallerySmall}>
+                                {(colorPreviews[c] || []).map((src, i) => (
+                                    <div key={src} className={styles.tileSmall}>
+                                        <img
+                                            className={styles.thumb}
+                                            src={src}
+                                            alt={`${c}-preview-${i}`}
+                                        />
+                                        <div className={styles.actions}>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeColorFile(c, i)}
+                                                title="Remove"
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
+                                        <div className={styles.meta}>
+                                            <span className={styles.name}>
+                                                {(colorFiles[c] && colorFiles[c][i]?.name) ||
+                                                    `image-${i + 1}`}
+                                            </span>
+                                            <span className={styles.size}>
+                                                {(colorFiles[c] && colorFiles[c][i])
+                                                    ? formatBytes(colorFiles[c][i].size)
+                                                    : "—"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </Fragment>
+                ))}
+
+                <div className={styles.modalActions}>
+                    <button type="submit">Save Changes</button>
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className={styles.secondaryBtn}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </form>
         </div>
-      </form>
-    </div>
-  );
+    );
 }

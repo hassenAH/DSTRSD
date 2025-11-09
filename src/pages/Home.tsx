@@ -28,13 +28,12 @@ export default function Home() {
       />
 
       <ProductInfo
-        pullimages={currentProduct!.images}
-        category={currentProduct!.category.name}
+
+        category={currentProduct!.categories[0]}
         title={currentProduct!.title}
         price={currentProduct!.price.toString()}
         description={currentProduct!.description}
-        sizes={currentProduct!.sizes}
-      />
+        sizes={currentProduct!.sizes} colors={currentProduct!.colors} />
 
       {/* <CategorySection></CategorySection> */}
       <Footer />

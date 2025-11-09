@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import styles from "./ProductPage.module.scss";
 import ProductCard from "../components/UI/ProductCard";
 import { useCart } from "../../utils/CartContext";
-import { useProducts } from "../../utils/ProductContext"; // adjust path if different
+import { useProducts } from "../../utils/ProductContext";
 import type { Product as ApiProduct } from "../../utils/ProductContext";
 
 type FilterType = "FEATURED" | "NEWEST" | "SIZE" | "ALL";
@@ -17,7 +17,6 @@ const toSlug = (s: string) =>
 
 // extract timestamp from Mongo ObjectId
 const objectIdTime = (id: string) => {
-    // first 8 hex chars are epoch seconds
     const secondsHex = id?.slice(0, 8);
     const seconds = parseInt(secondsHex, 16);
     return isNaN(seconds) ? 0 : seconds * 1000;
@@ -25,7 +24,7 @@ const objectIdTime = (id: string) => {
 
 export default function ProductsPage() {
     const { addToCart } = useCart();
-    const { products, loading, error, fetchAllProducts } = useProducts();
+    const { products = [], loading, error, fetchAllProducts } = useProducts();
 
     const [activeFilter, setActiveFilter] = useState<FilterType>("FEATURED");
     const [activeCategory, setActiveCategory] = useState<string>("All");
@@ -37,15 +36,25 @@ export default function ProductsPage() {
         if (!products || products.length === 0) {
             fetchAllProducts().catch(() => { });
         }
-    }, []); // eslint-disable-line
+    }, [fetchAllProducts, products?.length]);
 
-    const categories = ["All", "Men", "Women", "Accessories"]
+    // derive categories from products if available, fallback to static list
+    const derivedCategories = useMemo(() => {
+        const set = new Set<string>();
+        products.forEach((p) => {
+            (p.categories || []).forEach((c) => {
+                if (c) set.add(c);
+            });
+        });
+        return ["All", ...Array.from(set).sort()];
+    }, [products]);
 
+    const categories = derivedCategories.length ? derivedCategories : ["All", "Men", "Women", "Accessories"];
 
     // Pick current category products
     const current: ApiProduct[] = useMemo(() => {
         if (activeCategory === "All") return products;
-        return products.filter((p) => p.category?.name === activeCategory);
+        return products.filter((p) => (p.categories || []).some((c) => c === activeCategory));
     }, [products, activeCategory]);
 
     // Filter + sort based on segmented control
@@ -53,22 +62,27 @@ export default function ProductsPage() {
         let list = current.slice();
 
         if (activeFilter === "ALL") {
-            // no-op: show all in category
+            // no-op
         } else if (activeFilter === "FEATURED") {
-            // heuristic: featured = in stock, show higher stock first
-            list = list.filter((p) => p.stock > 0).sort((a, b) => b.stock - a.stock);
+            // featured heuristic: available stock (sum of sizes) > 0, sort by total stock desc
+            list = list
+                .filter((p) => {
+                    const total = (p.sizes || []).reduce((s, it) => s + (Number((it as any).stock) || 0), 0);
+                    return total > 0;
+                })
+                .sort((a, b) => {
+                    const sa = (a.sizes || []).reduce((s, it) => s + (Number((it as any).stock) || 0), 0);
+                    const sb = (b.sizes || []).reduce((s, it) => s + (Number((it as any).stock) || 0), 0);
+                    return sb - sa;
+                });
         } else if (activeFilter === "NEWEST") {
-            list = list.sort(
-                (a, b) => objectIdTime(b._id) - objectIdTime(a._id)
-            );
+            list = list.sort((a, b) => objectIdTime(b._id) - objectIdTime(a._id));
         } else if (activeFilter === "SIZE") {
-            // if a size is chosen, must include it in sizes[]
             if (activeSize) {
                 list = list.filter((p) =>
-                    (p.sizes || []).map((s) => s.toUpperCase()).includes(activeSize)
+                    (p.sizes || []).some((s) => String((s as any).name).toUpperCase() === activeSize)
                 );
             } else {
-                // Only show items that are size-based at all
                 list = list.filter((p) => (p.sizes || []).length > 0);
             }
         }
@@ -114,17 +128,18 @@ export default function ProductsPage() {
                         </button>
                     ))}
                 </nav>
-
-
             </header>
 
             {/* Grid */}
             <main className={styles.grid}>
                 {loading && <div className={styles.loading}>Loading products…</div>}
+
                 {!loading &&
                     filtered.map((p) => {
-                        const firstImage = (p.images && p.images[0]) || "/placeholder.png";
-                        const slug = toSlug(p.title);
+                        // pick first image from first color that has images, fallback to placeholder
+                        const firstColorWithImages = (p.colors || []).find((c) => Array.isArray(c.images) && c.images.length > 0);
+                        const firstImage = firstColorWithImages?.images?.[0] ?? "/placeholder.png";
+                        const slug = toSlug(p.title || p._id);
                         const displayPrice = `${p.price} DT`;
 
                         return (
@@ -143,7 +158,7 @@ export default function ProductsPage() {
                                             name: p.title,
                                             image: firstImage,
                                             price: p.price,
-                                            size: activeSize ?? undefined,
+                                            size: undefined,
                                             qty: 1,
                                             merge: true,
                                         });
@@ -168,7 +183,7 @@ export default function ProductsPage() {
                             role="tab"
                             aria-selected={activeSize === s}
                             className={`${styles.sizeBtn} ${activeSize === s ? styles.sizeBtn__active : ""}`}
-                            onClick={() => setActiveSize(s)}
+                            onClick={() => setActiveSize(activeSize === s ? null : s)}
                         >
                             {s}
                         </button>
@@ -196,11 +211,7 @@ export default function ProductsPage() {
                         {f}
                     </button>
                 ))}
-                <span
-                    className={styles.dockBar__thumb}
-                    data-pos={activeFilter.toLowerCase()}
-                    aria-hidden
-                />
+                <span className={styles.dockBar__thumb} data-pos={activeFilter.toLowerCase()} aria-hidden />
             </footer>
         </div>
     );

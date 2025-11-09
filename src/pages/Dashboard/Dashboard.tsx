@@ -1,7 +1,7 @@
 import { useState } from "react";
 import styles from "./Dashboard.module.scss";
 import DeleteModal from "./DeleteProductModal";
-import EditModal from "./EditProductModal";
+
 import AddProductModal from "./AddProductModal";
 import DashboardSidebar from "./Sidebar/SidebarDashboard";
 
@@ -94,7 +94,7 @@ export default function DashboardPage() {
         <main className={styles.grid}>
           {products.map((p) => (
             <div key={p._id} className={styles.card}>
-              <img src={p.images?.[0]} alt={p.title} className={styles.image} />
+              <img src={p.colors[0]?.images[0]} alt={p.title} className={styles.image} />
               <h3>{p.title}</h3>
               <p>{(p.price).toFixed(2)} DT</p>
               {p.description?.intro && <p>{p.description.intro}</p>}
@@ -118,7 +118,7 @@ export default function DashboardPage() {
           />
         )}
 
-        {/* Edit Modal */}
+        {/* Edit Modal 
         {editingProduct && (
           <EditModal
             product={editingProduct}
@@ -126,7 +126,7 @@ export default function DashboardPage() {
             onCancel={() => setEditingProduct(null)}
           />
 
-        )}
+        )}*/}
 
         {/* Add Modal */}
         {showAddModal && (

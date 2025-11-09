@@ -1,58 +1,69 @@
+// ProductInfo.tsx (updated)
 import { useMemo, useState } from "react";
 import styles from "./ProductInfo.module.scss";
-import SizeSelector from "./SizeSelector";
 import QuantitySelector from "./QuantitySelector";
 import DeliveryInfo from "./DeliveryInfo";
 import ProductImage from "./ProductImage";
 
 import { useNavigate } from "react-router-dom";
 import { useCart, type CartItem } from "../../utils/CartContext";
-export type ProductDescription = {
-  intro: string;
-  detailsTitle?: string;
-  details?: string[];
-};
+import type { SizeVariant, ColorVariant, ProductDescription } from "../../utils/ProductContext";
+
 interface ProductInfoProps {
   category: string;
   title: string;
   price: string; // e.g. "79 Dt"
   description: ProductDescription;
-  pullimages: string[];
-  sizes: string[];
+  colors: ColorVariant[]; // now we get colors with images
+  sizes: SizeVariant[];
 }
 
 export default function ProductInfo({
-  pullimages,
-
+  colors = [],
   title,
   price,
   description,
-  sizes,
+  sizes = [],
 }: ProductInfoProps) {
-  const [selectedSize, setSelectedSize] = useState(sizes[0]);
+  const defaultColor = colors[0]?.name ?? "default";
+  const [selectedColor, setSelectedColor] = useState<string>(defaultColor);
+  const [selectedSize, setSelectedSize] = useState<string>(sizes[0]?.name ?? "");
   const [quantity, setQuantity] = useState(1);
   const navigate = useNavigate();
   const { addToCartHome } = useCart();
 
-  // "79 Dt" -> 79
+  // parse price number
   const unitPrice = useMemo(
     () => Number((price || "").replace(/[^\d.]/g, "")) || 0,
     [price]
   );
 
+  // find images for selected color
+  const imagesForColor = useMemo(() => {
+    const found = colors.find((c) => c.name === selectedColor);
+    return found ? found.images : [];
+  }, [colors, selectedColor]);
+
   const item: CartItem = useMemo(
     () => ({
-      id: `counterfeit-black-${selectedSize}`.toLowerCase(), // stable per-variant
+      id: `${title}-${selectedColor}-${selectedSize}`.toLowerCase(),
       name: title,
-      image: pullimages[0],
+      image: imagesForColor[0] ?? "", // first image of selected color
       price: unitPrice,
       qty: quantity,
       size: selectedSize,
+      color: selectedColor,
     }),
-    [selectedSize, title, unitPrice, quantity, pullimages]
+    [selectedSize, selectedColor, title, unitPrice, quantity, imagesForColor]
   );
 
   const handleBuyNow = () => {
+    // optionally check stock for selected size:
+    const sizeObj = sizes.find((s) => s.name === selectedSize);
+    if (sizeObj && quantity > sizeObj.stock) {
+      alert(`Only ${sizeObj.stock} items available in size ${selectedSize}`);
+      return;
+    }
     addToCartHome(item);
     navigate("/checkout");
   };
@@ -62,17 +73,16 @@ export default function ProductInfo({
       <div className={styles.productLayout}>
         <div className={styles.leftColumn}>
           <ProductImage
-            src={pullimages[0]}
-            hoverSrc={pullimages[1]}
+            src={imagesForColor[0] ?? ""}
+            hoverSrc={imagesForColor[1] ?? ""}
             alt={title}
             showNew
             showOnlineExclusive
           />
+          {/* Could add a small gallery/thumbnail list */}
         </div>
 
         <div className={styles.rightColumn}>
-
-
           <header className={styles.productHeader}>
             <div className={styles.productDetails}>
               <h1 className={styles.productTitle}>{title}</h1>
@@ -83,7 +93,7 @@ export default function ProductInfo({
               <div className={styles.productDetailsBlock}>
                 <h2 className={styles.detailsTitle}>{description.detailsTitle}</h2>
                 <ul className={styles.detailsList}>
-                  {description.details!.map((d, i) => (
+                  {description.details?.map((d, i) => (
                     <li key={i}>{d}</li>
                   ))}
                 </ul>
@@ -93,13 +103,50 @@ export default function ProductInfo({
 
           <hr className={styles.secondDivider} />
 
-          <SizeSelector
-            sizes={sizes}
-            selectedSize={selectedSize}
-            onSizeChange={setSelectedSize}
-          />
+          {/* Color selector */}
+          <div className={styles.colorSelector}>
+            <label>Color:</label>
+            <div className={styles.colorSwatches}>
+              {colors.map((c) => (
+                <button
+                  key={c.name}
+                  aria-pressed={c.name === selectedColor}
+                  className={`${styles.swatch} ${c.name === selectedColor ? styles.activeSwatch : ""}`}
+                  onClick={() => setSelectedColor(c.name)}
+                  title={c.name}
+                >
+                  {/* if you have a tiny color preview image use it, else show text */}
+                  {c.images[0] ? (
+                    <img src={c.images[0]} alt={c.name} className={styles.swatchImg} />
+                  ) : (
+                    <span className={styles.swatchLabel}>{c.name}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Size selector - assumes sizes include stock */}
+          <div className={styles.sizeSelector}>
+            <label>Size:</label>
+            <div className={styles.sizeOptions}>
+              {sizes.map((s) => (
+                <button
+                  key={s.name}
+                  disabled={s.stock <= 0}
+                  className={`${styles.sizeBtn} ${s.name === selectedSize ? styles.activeSize : ""}`}
+                  onClick={() => setSelectedSize(s.name)}
+                  aria-label={`${s.name} ${s.stock <= 0 ? "out of stock" : `${s.stock} available`}`}
+                >
+                  <span>{s.name}</span>
+                  <small className={styles.stockNote}>{s.stock} left</small>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <p className={styles.selectedSizeLabel}>
-            Selected Size: <strong>{selectedSize}</strong>
+            Selected: <strong>{selectedSize}</strong> • Color: <strong>{selectedColor}</strong>
           </p>
 
           <div className={styles.purchaseSection}>

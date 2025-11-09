@@ -11,44 +11,49 @@ import api from "./axios";
 
 export type ProductDescription = {
   intro: string;
-  detailsTitle?: string;
+  detailsTitle: string;
   details?: string[];
 };
 
-export type ProductCategory = {
-  _id: string;
+export type SizeVariant = {
   name: string;
-  description?: string;
-};
-export type CreateProductMultipart = {
-  title: string;
-  price: number;      // in minor units or major depending on your API; see note below
   stock: number;
-  categoryId: string; // backend expects categoryId for relation
-  sizes: string[];
-  colors: string[];
-  description: {
-    intro: string;
-    detailsTitle?: string;
-    details?: string[];
-  };
-  images: File[];     // <— files from the form
 };
+
+export type ColorVariant = {
+  name: string;
+  images: string[];
+};
+
 export type Product = {
   _id: string;
   title: string;
   description: ProductDescription;
   price: number;
-  stock: number;
-  category: ProductCategory;
-  images: string[];
-  sizes: string[];
-  colors: string[];
+  // Backend returns categories as ObjectId strings (not populated)
+  categories: string[];
+  sizes: SizeVariant[];
+  colors: ColorVariant[];
   __v?: number;
+  // optional, front-end convenience
+  stock?: number;
 };
 
-// For creating/updating from forms
-export type CreateProductInput = Omit<Product, "_id" | "__v">;
+/** Form payload (before we convert to FormData) */
+export type CreateProductMultipart = {
+  title: string;
+  price: number;
+  categories: string[];               // <- aligned with backend
+  sizes: SizeVariant[];               // [{name, stock}]
+  colors: string[];                   // names only; we convert to [{name}]
+  description: {
+    intro: string;
+    detailsTitle: string;
+    details?: string[];
+  };
+  colorFiles?: { [colorName: string]: File[] }; // images per color name
+};
+
 export type UpdateProductInput = Partial<Omit<Product, "_id" | "__v">>;
 
 type ProductState = {
@@ -66,7 +71,7 @@ type Action =
   | { type: "SET_PRODUCT"; payload: Product | null }
   | { type: "ADD_PRODUCT"; payload: Product }
   | { type: "UPDATE_PRODUCT"; payload: Product }
-  | { type: "REMOVE_PRODUCT"; payload: string } // product _id
+  | { type: "REMOVE_PRODUCT"; payload: string }
   | { type: "ERROR"; payload: string }
   | { type: "CLEAR_ERROR" };
 
@@ -101,7 +106,7 @@ function reducer(state: ProductState, action: Action): ProductState {
   }
 }
 
-/* ----------------------------- Context Shape ----------------------------- */
+/* ----------------------------- Context ----------------------------- */
 
 type ProductContextShape = {
   products: Product[];
@@ -109,11 +114,8 @@ type ProductContextShape = {
   loading: boolean;
   error: string | null;
 
-  // Reads
   fetchAllProducts: () => Promise<void>;
   fetchProductById: (id: string) => Promise<void>;
-
-  // Mutations
 
   createProductMultipart: (data: CreateProductMultipart) => Promise<Product>;
   updateProduct: (id: string, data: UpdateProductInput) => Promise<Product>;
@@ -134,7 +136,6 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     error: null,
   });
 
-  // GET all products
   const fetchAllProducts = async () => {
     dispatch({ type: "START" });
     try {
@@ -148,7 +149,6 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // GET product by ID
   const fetchProductById = async (id: string) => {
     dispatch({ type: "START" });
     try {
@@ -162,42 +162,76 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // POST /products
+  /** POST /products — FormData aligned to backend (colors indexed + colorImages<i>) */
   const createProductMultipart = async (data: CreateProductMultipart) => {
     dispatch({ type: "START" });
+
     try {
       const fd = new FormData();
-      fd.set("title", data.title);
-      fd.set("price", String(data.price));   // NOTE: if backend expects cents, pass cents here
-      fd.set("stock", String(data.stock));
-      fd.set("categoryId", data.categoryId);
-      fd.set("sizes", JSON.stringify(data.sizes));
-      fd.set("colors", JSON.stringify(data.colors));
+
+      // primitives
+      fd.set("title", String(data.title ?? "").trim());
+      fd.set("price", String(Number(data.price)));
+
+      // categories: backend expects "categories" as a JSON array (or CSV)
+      fd.set("categories", JSON.stringify((data.categories || []).map(String)));
+
+      // sizes: [{ name, stock }]
+      const sizesPayload = (Array.isArray(data.sizes) ? data.sizes : [])
+        .map(s => ({
+          name: String(s?.name ?? "").trim(),
+          stock: Math.max(0, Number(s?.stock ?? 0)),
+        }))
+        .filter(s => s.name);
+      fd.set("sizes", JSON.stringify(sizesPayload));
+
+      // colors: must be array of objects [{ name }]
+      const colorNames = (Array.isArray(data.colors) ? data.colors : [])
+        .map((c) => String(c || "").trim())
+        .filter(Boolean);
+      const colorsPayload = colorNames.map((name) => ({ name }));
+      fd.set("colors", JSON.stringify(colorsPayload));
+
+      // description
       fd.set(
         "description",
         JSON.stringify({
-          intro: data.description.intro,
-          detailsTitle: data.description.detailsTitle,
-          details: data.description.details ?? [],
+          intro: String(data.description?.intro ?? "").trim(),
+          detailsTitle: String(data.description?.detailsTitle ?? "").trim(),
+          details: Array.isArray(data.description?.details)
+            ? data.description.details.map((d) => String(d ?? "").trim()).filter(Boolean)
+            : [],
         })
       );
-      data.images.forEach((file) => fd.append("images", file));
 
-      // If your route is POST /products/create:
-      const res = await api.post<Product>("/products/create", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      // files: colorImages0, colorImages1, ... (order matches colors array above)
+      if (data.colorFiles) {
+        colorNames.forEach((name, index) => {
+          const files = data.colorFiles?.[name] || [];
+          if (Array.isArray(files) && files.length) {
+            const field = `colorImages${index}`;
+            files.forEach((f) => fd.append(field, f));
+          }
+        });
+      }
 
-      dispatch({ type: "ADD_PRODUCT", payload: res.data });
-      return res.data;
+      // NOTE: If your route is '/products/create', change this URL.
+      const res = await api.post<Product>("/products/create", fd);
+
+      const created = res.data;
+      dispatch({ type: "ADD_PRODUCT", payload: created });
+      return created;
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Failed to create product";
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Failed to create product";
       dispatch({ type: "ERROR", payload: msg });
       throw new Error(msg);
     }
   };
 
-  // PATCH /products/:id (or PUT)
   const updateProduct = async (id: string, data: UpdateProductInput) => {
     dispatch({ type: "START" });
     try {
@@ -211,7 +245,6 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // DELETE /products/:id
   const deleteProduct = async (id: string) => {
     dispatch({ type: "START" });
     try {
@@ -229,7 +262,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<ProductContextShape>(
     () => ({
       products: state.products,
-      currentProduct: state.products[0],
+      currentProduct: state.currentProduct,
       loading: state.loading,
       error: state.error,
 
