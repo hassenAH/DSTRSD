@@ -416,3 +416,234 @@ textarea {
   padding: 8px 10px;
   border-radius: var(--radius-sm);
 }
+
+/* ----------------------- Additions for new UI ----------------------- */
+
+/* Colors editor containers */
+.colorSection {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: var(--g);
+  background: #fff;
+}
+
+.colorHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--g);
+}
+
+/* Sizes grid */
+.sizesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--g);
+}
+
+.sizeRow {
+  display: grid;
+  grid-template-columns: 1fr 110px;
+  align-items: center;
+  gap: var(--g);
+}
+
+/* Reusable icon button (outside .detailsList scope) */
+.iconBtn {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: #f7f7f7;
+  cursor: pointer;
+  transition: background .15s ease;
+
+  &:hover {
+    background: #efefef;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--ring);
+  }
+}
+
+/* Checkbox (top-level so it works in sizesGrid too) */
+.checkbox {
+  --size: 20px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: calc(var(--size) + 8px);
+  cursor: pointer;
+  user-select: none;
+
+  input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+
+    &:focus+.checkmark {
+      box-shadow: 0 0 0 3px var(--ring);
+    }
+
+    &:checked+.checkmark {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    &:checked+.checkmark::after {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+  }
+
+  .checkmark {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: var(--size);
+    height: var(--size);
+    transform: translateY(-50%);
+    border: 2px solid var(--border-strong);
+    border-radius: 50%;
+    background: transparent;
+    transition: background 160ms ease;
+
+    &::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: calc(var(--size) * 0.5);
+      height: calc(var(--size) * 0.5);
+      background: var(--primary-contrast);
+      border-radius: 50%;
+      transform: translate(-50%, -50%) scale(0.6);
+      opacity: 0;
+      transition: 160ms ease;
+    }
+  }
+}
+
+/* Compact dropzone used per-color */
+.dropzoneSmall {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: .9rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: #fafafa;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+
+  &:hover {
+    border-color: #999;
+    background: #f5f5f5;
+  }
+
+  input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+}
+
+.dzTextSmall {
+  font-size: .9rem;
+  color: #555;
+
+  strong {
+    color: #111;
+  }
+}
+
+/* Per-color gallery (alias of .gallery but tuned for this UI) */
+.gallerySmall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: .75rem;
+}
+
+/* Tile aliases to match the new code */
+.tileSmall {
+  position: relative;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+
+/* Reuse existing .thumb if present; define safe fallback */
+.thumb {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+  background: #f2f2f2;
+}
+
+/* Actions overlay: show on hover/focus */
+.tileSmall .actions {
+  position: absolute;
+  inset: 8px;
+  display: flex;
+  gap: .35rem;
+  justify-content: space-between;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .15s ease, transform .15s ease;
+  z-index: 2;
+  /* ensure above img */
+}
+
+.tileSmall:hover .actions,
+.tileSmall:focus-within .actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Buttons inside overlay when not overridden inline */
+.tileSmall .actions button {
+  appearance: none;
+  border: 0;
+  padding: .35rem .5rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .6);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .18);
+  cursor: pointer;
+  font-size: .75rem;
+  line-height: 1;
+  transition: background .15s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, .7);
+  }
+}
+
+/* Meta row (alias) */
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .35rem;
+  padding: .45rem .6rem;
+  font-size: .78rem;
+  color: #444;
+}
+
+.name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.size {
+  color: #777;
+  font-variant-numeric: tabular-nums;
+}

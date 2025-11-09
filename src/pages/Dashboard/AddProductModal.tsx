@@ -6,6 +6,7 @@ import React, {
   FormEvent,
   useEffect,
   Fragment,
+  useRef,
 } from "react";
 import styles from "./AddProduct.module.scss";
 import { useProducts } from "../../utils/ProductContext";
@@ -26,6 +27,16 @@ type Props = {
   onCancel?: () => void;
 };
 
+/** New: structured color row */
+type ColorRow = {
+  id: string;            // local uid
+  name: string;          // what backend stores
+  hex?: string;          // optional UI-only swatch (not sent unless you choose to later)
+  files: File[];         // images for this color
+  previews: string[];    // object URLs for the files
+  coverIndex: number | null; // which image is the "cover" (sent 1st)
+};
+
 export default function AddProduct({ onAdd, onCancel }: Props) {
   const { createProductMultipart, loading, error } = useProducts();
 
@@ -34,12 +45,9 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
   const [price, setPrice] = useState<string>("");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [sizesSelected, setSizesSelected] = useState<Record<string, number>>({});
-  const [colorsInput, setColorsInput] = useState<string>("");
 
-  const colors = useMemo(
-    () => colorsInput.split(",").map((s) => s.trim()).filter(Boolean),
-    [colorsInput]
-  );
+  // REPLACED: old comma field -> rich color rows
+  const [colorRows, setColorRows] = useState<ColorRow[]>([]);
 
   const [description, setDescription] = useState<DescriptionForm>({
     intro: "",
@@ -47,34 +55,14 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
     details: [""],
   });
 
-  // Per-color files and previews
-  const [colorFiles, setColorFiles] = useState<Record<string, File[]>>({});
-  const [colorPreviews, setColorPreviews] = useState<Record<string, string[]>>({});
   const [errMsg, setErrMsg] = useState<string>("");
 
-  // Keep the files/previews in sync with the colors list
-  useEffect(() => {
-    setColorFiles((prev) => {
-      const next = { ...prev };
-      colors.forEach((c) => { if (!next[c]) next[c] = []; });
-      Object.keys(next).forEach((k) => { if (!colors.includes(k)) delete next[k]; });
-      return next;
-    });
-    setColorPreviews((prev) => {
-      const next = { ...prev };
-      colors.forEach((c) => { if (!next[c]) next[c] = []; });
-      Object.keys(next).forEach((k) => { if (!colors.includes(k)) delete next[k]; });
-      return next;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [colorsInput]);
-
-  // Clean URLs on unmount
+  // Clean up object URLs on unmount
   useEffect(() => {
     return () => {
-      Object.values(colorPreviews).flat().forEach((url) => URL.revokeObjectURL(url));
+      colorRows.forEach((row) => row.previews.forEach((url) => URL.revokeObjectURL(url)));
     };
-  }, [colorPreviews]);
+  }, [colorRows]);
 
   // ----- Helpers -----
   const formatBytes = (n: number) => {
@@ -99,38 +87,90 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
   const setSizeStock = (size: string, stock: number) =>
     setSizesSelected((prev) => ({ ...prev, [size]: Math.max(0, Math.floor(stock || 0)) }));
 
-  const handleColorFilesSelect = (color: string, e: ChangeEvent<HTMLInputElement>) => {
+  // ----- Color rows UI -----
+  const addColorRow = () => {
+    setColorRows((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        name: "",
+        hex: "#000000",
+        files: [],
+        previews: [],
+        coverIndex: null,
+      },
+    ]);
+  };
+
+  const removeColorRow = (id: string) => {
+    setColorRows((prev) => {
+      const row = prev.find((r) => r.id === id);
+      row?.previews.forEach((url) => URL.revokeObjectURL(url));
+      return prev.filter((r) => r.id !== id);
+    });
+  };
+
+  const moveColorRow = (id: string, dir: -1 | 1) => {
+    setColorRows((prev) => {
+      const idx = prev.findIndex((r) => r.id === id);
+      if (idx < 0) return prev;
+      const to = idx + dir;
+      if (to < 0 || to >= prev.length) return prev;
+      const arr = prev.slice();
+      const [row] = arr.splice(idx, 1);
+      arr.splice(to, 0, row);
+      return arr;
+    });
+  };
+
+  const updateColorName = (id: string, name: string) => {
+    setColorRows((prev) => prev.map((r) => (r.id === id ? { ...r, name } : r)));
+  };
+
+  const updateColorHex = (id: string, hex: string) => {
+    setColorRows((prev) => prev.map((r) => (r.id === id ? { ...r, hex } : r)));
+  };
+
+  const handleColorFilesSelect = (id: string, e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const added = Array.from(e.target.files);
-    setColorFiles((prev) => {
-      const next = { ...(prev || {}) };
-      next[color] = (next[color] || []).concat(added);
-      return next;
-    });
-    setColorPreviews((prev) => {
-      const next = { ...(prev || {}) };
-      next[color] = (next[color] || []).concat(added.map((f) => URL.createObjectURL(f)));
-      return next;
-    });
+    setColorRows((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        const newFiles = r.files.concat(added);
+        const newPreviews = r.previews.concat(added.map((f) => URL.createObjectURL(f)));
+        const coverIndex =
+          r.coverIndex == null && newFiles.length > 0 ? 0 : r.coverIndex;
+        return { ...r, files: newFiles, previews: newPreviews, coverIndex };
+      })
+    );
     e.currentTarget.value = "";
   };
 
-  const removeColorFile = (color: string, index: number) => {
-    setColorFiles((prev) => {
-      const next = { ...(prev || {}) };
-      const arr = next[color] ? next[color].slice() : [];
-      if (arr[index]) arr.splice(index, 1);
-      next[color] = arr;
-      return next;
-    });
-    setColorPreviews((prev) => {
-      const next = { ...(prev || {}) };
-      const arr = next[color] ? next[color].slice() : [];
-      const [removed] = arr.splice(index, 1);
-      if (removed) URL.revokeObjectURL(removed);
-      next[color] = arr;
-      return next;
-    });
+  const removeColorFile = (id: string, idx: number) => {
+    setColorRows((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        const files = r.files.slice();
+        const previews = r.previews.slice();
+        if (previews[idx]) URL.revokeObjectURL(previews[idx]);
+        files.splice(idx, 1);
+        previews.splice(idx, 1);
+
+        let coverIndex = r.coverIndex;
+        if (coverIndex != null) {
+          if (idx === coverIndex) coverIndex = files.length ? 0 : null; // reset to first if removed
+          else if (idx < coverIndex) coverIndex = coverIndex - 1; // shift left
+        }
+        return { ...r, files, previews, coverIndex };
+      })
+    );
+  };
+
+  const setCover = (id: string, idx: number) => {
+    setColorRows((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, coverIndex: idx } : r))
+    );
   };
 
   // Description helpers
@@ -151,19 +191,33 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
       return { ...d, details: next.length ? next : [""] };
     });
 
+  // Derived plain colors (names only) for backend
+  const colorsForBackend = useMemo(
+    () => colorRows.map((r) => r.name.trim()).filter(Boolean),
+    [colorRows]
+  );
+
   // Validation
   const validate = () => {
     if (!title.trim()) return "Title is required.";
     if (!price || isNaN(Number(price))) return "Valid price is required.";
     if (!categoryIds.length) return "Please pick at least one category.";
-    if (!colors.length) return "At least one color is required.";
-    const hasImages = colors.some((c) => (colorFiles[c] || []).length > 0);
-    if (!hasImages) return "Upload at least one image for one of the colors.";
+
+    // Require at least one color with a name
+    const namedColors = colorRows.filter(r => r.name.trim());
+    if (!namedColors.length) return "At least one color is required.";
+
+    // If a row has files, it must have a name
+    const unnamedWithFiles = colorRows.some(r => r.files.length && !r.name.trim());
+    if (unnamedWithFiles) return "Please name each color that has images.";
+
+    const hasAnyImage = colorRows.some((r) => r.files.length > 0);
+    if (!hasAnyImage) return "Upload at least one image for one of the colors.";
+
     if (!description.intro.trim()) return "Description intro is required.";
     if (!description.detailsTitle.trim()) return "Description detailsTitle is required.";
     return "";
   };
-
   // Submit
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -175,39 +229,50 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
       name,
       stock,
     }));
+    // Build colorFiles with cover first for each color
+    const colorFiles: Record<string, File[]> = {};
+    colorRows.forEach((row) => {
+      const name = row.name.trim();
+      if (!name) return;
+      if (row.files.length === 0) return;
+      let ordered = row.files.slice();
+      if (row.coverIndex != null && row.files[row.coverIndex]) {
+        const cover = row.files[row.coverIndex];
+        ordered = [cover, ...row.files.filter((_, i) => i !== row.coverIndex)];
+      }
+      colorFiles[name] = ordered;
+    });
+    const colorsMerged = colorRows
+      .filter((row) => row.name.trim()) // only named colors
+      .map((row) => {
+        let files = row.files.slice();
+        if (row.coverIndex != null && row.files[row.coverIndex]) {
+          const cover = row.files[row.coverIndex];
+          files = [cover, ...row.files.filter((_, i) => i !== row.coverIndex)];
+        }
+        return {
+          name: row.name.trim(),
+          files,
+        };
+      });
 
     const payload: CreateProductMultipart = {
       title: title.trim(),
       price: Number(price),
-      categories: categoryIds,    // <- aligned with backend
+      categories: categoryIds,
       sizes: sizesPayload,
-      colors,                     // names only; context converts to [{name}]
+      colors: colorsMerged, // ⬅️ merged array
       description: {
         intro: description.intro,
         detailsTitle: description.detailsTitle,
         details: description.details.filter(Boolean),
       },
-      colorFiles: {},
     };
-
-    colors.forEach((c) => {
-      if ((colorFiles[c] || []).length) {
-        payload.colorFiles![c] = colorFiles[c];
-      }
-    });
 
     try {
       const created = await createProductMultipart(payload);
       onAdd?.(created);
-      // Optional: clear form
-      setTitle("");
-      setPrice("");
-      setCategoryIds([]);
-      setSizesSelected({});
-      setColorsInput("");
-      setDescription({ intro: "", detailsTitle: "Product Details", details: [""] });
-      setColorFiles({});
-      setColorPreviews({});
+      // clear…
     } catch (err: any) {
       setErrMsg(err.message || "Something went wrong");
     }
@@ -243,7 +308,7 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
 
           <div>
             <label>Categories</label>
-            <CategorySelect multiple value={categoryIds} onChange={setCategoryIds} size={6} />
+            <CategorySelect multiple value={categoryIds} onChange={setCategoryIds} />
           </div>
         </div>
 
@@ -275,13 +340,231 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
           })}
         </div>
 
-        <label>Colors (comma separated)</label>
-        <input
-          type="text"
-          value={colorsInput}
-          onChange={(e) => setColorsInput(e.target.value)}
-          placeholder="Black, White"
-        />
+        {/* -------- Colors Editor -------- */}
+        <div className={styles.hr} />
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+          <h3 style={{ margin: 0 }}>Colors</h3>
+          <button
+            type="button"
+            className={styles.addDetailBtn}
+            onClick={addColorRow}
+            title="Add color"
+          >
+            + Add Color
+          </button>
+        </div>
+        {!colorRows.length && (
+          <p className={styles.hint}>Add at least one color, then upload images per color.</p>
+        )}
+
+        <div style={{ display: "grid", gap: 16 }}>
+          {colorRows.map((row, idx) => (
+            <section
+              key={row.id}
+              className={styles.colorSection}
+              aria-label={`Color ${row.name || idx + 1}`}
+              style={{ border: "1px dashed var(--border,#4444)", borderRadius: 12, padding: 12 }}
+            >
+              <header
+                className={styles.colorHeader}
+                style={{ display: "flex", gap: 12, alignItems: "center" }}
+              >
+                <input
+                  type="text"
+                  value={row.name}
+                  onChange={(e) => updateColorName(row.id, e.target.value)}
+                  placeholder="Color name (e.g., Black)"
+                  aria-label="Color name"
+                  style={{
+                    flex: 1,
+                    padding: "8px 10px",
+                    borderRadius: 8,
+                    border: "1px solid var(--border,#4444)",
+                  }}
+                />
+                <input
+                  type="color"
+                  value={row.hex || "#000000"}
+                  onChange={(e) => updateColorHex(row.id, e.target.value)}
+                  aria-label="Color swatch"
+                  title="Swatch (optional)"
+                  style={{ width: 40, height: 36, padding: 0, border: "none", cursor: "pointer" }}
+                />
+                <div style={{ marginLeft: "auto", display: "inline-flex", gap: 6 }}>
+                  <button
+                    type="button"
+                    className={styles.iconBtn}
+                    onClick={() => moveColorRow(row.id, -1)}
+                    disabled={idx === 0}
+                    title="Move up"
+                    aria-label="Move up"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.iconBtn}
+                    onClick={() => moveColorRow(row.id, +1)}
+                    disabled={idx === colorRows.length - 1}
+                    title="Move down"
+                    aria-label="Move down"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.iconBtn}
+                    onClick={() => removeColorRow(row.id)}
+                    title="Remove color"
+                    aria-label="Remove color"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </header>
+
+              <small className={styles.hint}>
+                Upload images for {row.name || "this color"}. First image will be used as cover.
+              </small>
+
+              <label
+                className={styles.dropzoneSmall}
+                style={{
+                  display: "grid",
+                  placeItems: "center",
+                  padding: 16,
+                  borderRadius: 12,
+                  border: "1px solid var(--border,#4444)",
+                  cursor: "pointer",
+                  marginTop: 8,
+                }}
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => handleColorFilesSelect(row.id, e)}
+                />
+                <div className={styles.dzTextSmall}>Click to choose images</div>
+              </label>
+
+              {/* Gallery */}
+              <div
+                className={styles.gallerySmall}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+                  gap: 12,
+                  marginTop: 12,
+                }}
+              >
+                {row.previews.map((src, i) => {
+                  const isCover = row.coverIndex === i;
+                  return (
+                    <article
+                      key={src}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Delete" || e.key === "Backspace") {
+                          e.preventDefault();
+                          removeColorFile(row.id, i);
+                        } else if (e.key === "Enter") {
+                          e.preventDefault();
+                          setCover(row.id, i);
+                        }
+                      }}
+                      className={styles.tileSmall}
+                      style={{
+                        border: `2px solid ${isCover ? "var(--accent,#2563eb)" : "transparent"}`,
+                        borderRadius: 12,
+                        overflow: "hidden",
+                        outline: "1px solid var(--border,#4444)",
+                        position: "relative",
+                      }}
+                    >
+                      <img
+                        className={styles.thumb}
+                        src={src}
+                        alt={`${row.name || "color"} image ${i + 1}${isCover ? " (cover)" : ""}`}
+                        style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }}
+                      />
+
+                      <div
+                        // if your CSS module .actions hides this, remove className or ensure it doesn't set display:none
+                        className={styles.actions}
+                        style={{
+                          position: "absolute",
+                          inset: 8,
+                          display: "flex",
+                          gap: 6,
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          pointerEvents: "none", // keep parent non-interactive
+                          zIndex: 2,             // make sure it's above the image
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setCover(row.id, i)}
+                          aria-label="Set cover"
+                          title="Set cover"
+                          style={{
+                            pointerEvents: "auto",
+                            padding: "4px 8px",
+                            borderRadius: 999,
+                            border: "none",
+                            background: "rgba(0,0,0,0.6)",
+                            color: "#fff",             // <-- fix: visible text color
+                            fontSize: 12,
+                          }}
+                        >
+                          {isCover ? "Cover ✓" : "Set cover"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => removeColorFile(row.id, i)}
+                          aria-label={`Remove ${row.name} image ${i + 1}`}
+                          title="Remove"
+                          style={{
+                            pointerEvents: "auto",
+                            padding: "4px 8px",
+                            borderRadius: 999,
+                            border: "none",
+                            background: "rgba(0,0,0,0.6)",
+                            color: "#fff",             // <-- fix: remove the stray '#', keep text white
+                            fontSize: 12,
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+
+                      <footer
+                        className={styles.meta}
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "6px 8px",
+                          fontSize: 12,
+                        }}
+                      >
+                        <span className={styles.name} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {row.files[i]?.name || `image-${i + 1}`}
+                        </span>
+                        <span className={styles.size}>
+                          {row.files[i] ? formatBytes(row.files[i].size) : "—"}
+                        </span>
+                      </footer>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
 
         <div className={styles.hr} />
 
@@ -330,58 +613,7 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
 
         <div className={styles.hr} />
 
-        <h3>Images (per color)</h3>
-        {!colors.length && (
-          <p className={styles.hint}>Enter colors above to upload images for each color.</p>
-        )}
 
-        {colors.map((c) => (
-          <Fragment key={c}>
-            <div className={styles.colorSection}>
-              <div className={styles.colorHeader}>
-                <strong>{c}</strong>
-                <small className={styles.hint}>Upload images for {c} (multiple allowed)</small>
-              </div>
-              <label className={styles.dropzoneSmall}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => handleColorFilesSelect(c, e)}
-                />
-                <div className={styles.dzTextSmall}>Click to choose images for {c}</div>
-              </label>
-
-              <div className={styles.gallerySmall}>
-                {(colorPreviews[c] || []).map((src, i) => (
-                  <div key={src} className={styles.tileSmall}>
-                    <img className={styles.thumb} src={src} alt={`${c}-preview-${i}`} />
-                    <div className={styles.actions}>
-                      <button
-                        type="button"
-                        onClick={() => removeColorFile(c, i)}
-                        aria-label={`Remove ${c} image ${i + 1}`}
-                        title="Remove"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                    <div className={styles.meta}>
-                      <span className={styles.name}>
-                        {(colorFiles[c] && colorFiles[c][i]?.name) || `image-${i + 1}`}
-                      </span>
-                      <span className={styles.size}>
-                        {colorFiles[c] && colorFiles[c][i]
-                          ? formatBytes(colorFiles[c][i].size)
-                          : "—"}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Fragment>
-        ))}
 
         <div className={styles.modalActions}>
           <button
@@ -391,7 +623,7 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
               !title.trim() ||
               !price ||
               !categoryIds.length ||
-              colors.length === 0
+              colorRows.every(r => !r.name.trim()) // at least one named color
             }
           >
             {loading ? "Saving..." : "Add Product"}

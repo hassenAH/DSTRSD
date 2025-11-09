@@ -30,28 +30,45 @@ export type Product = {
   title: string;
   description: ProductDescription;
   price: number;
-  // Backend returns categories as ObjectId strings (not populated)
   categories: string[];
   sizes: SizeVariant[];
   colors: ColorVariant[];
   __v?: number;
-  // optional, front-end convenience
   stock?: number;
 };
 
-/** Form payload (before we convert to FormData) */
+// utils/ProductContext.tsx (types section)
+export type ColorCreate = {
+  name: string;
+  files?: File[];
+};
+
 export type CreateProductMultipart = {
   title: string;
   price: number;
-  categories: string[];               // <- aligned with backend
-  sizes: SizeVariant[];               // [{name, stock}]
-  colors: string[];                   // names only; we convert to [{name}]
+  categories: string[];
+  sizes: SizeVariant[];
+  // ⬇️ merged: one array, each with name + files
+  colors: ColorCreate[];
   description: {
     intro: string;
     detailsTitle: string;
     details?: string[];
   };
-  colorFiles?: { [colorName: string]: File[] }; // images per color name
+};
+
+/** Update payload for multipart update (with images/removals) */
+export type UpdateProductMultipart = {
+  title?: string;
+  price?: number;
+  categories?: string[];
+  sizes?: SizeVariant[];
+  colors?: string[]; // names (new order & renames)
+  description?: ProductDescription;
+  /** Existing image URLs to delete, keyed by color name */
+  removeImages?: Record<string, string[]>;
+  /** Newly uploaded files keyed by color name */
+  colorFiles?: Record<string, File[]>;
 };
 
 export type UpdateProductInput = Partial<Omit<Product, "_id" | "__v">>;
@@ -118,7 +135,10 @@ type ProductContextShape = {
   fetchProductById: (id: string) => Promise<void>;
 
   createProductMultipart: (data: CreateProductMultipart) => Promise<Product>;
+  /** JSON-only updates (no file changes) */
   updateProduct: (id: string, data: UpdateProductInput) => Promise<Product>;
+  /** Multipart updates: image uploads/removals + fields */
+  updateProductMultipart: (id: string, data: UpdateProductMultipart) => Promise<Product>;
   deleteProduct: (id: string) => Promise<void>;
 
   clearError: () => void;
@@ -136,10 +156,11 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     error: null,
   });
 
+  /* -------- Simple: backend returns ALL products -------- */
   const fetchAllProducts = async () => {
     dispatch({ type: "START" });
     try {
-      const res = await api.get<Product[]>("/products");
+      const res = await api.get<Product[]>("/products"); // simple list
       dispatch({ type: "SET_PRODUCTS", payload: res.data });
     } catch (err: any) {
       dispatch({
@@ -162,7 +183,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  /** POST /products — FormData aligned to backend (colors indexed + colorImages<i>) */
+  // utils/ProductContext.tsx
   const createProductMultipart = async (data: CreateProductMultipart) => {
     dispatch({ type: "START" });
 
@@ -173,26 +194,26 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       fd.set("title", String(data.title ?? "").trim());
       fd.set("price", String(Number(data.price)));
 
-      // categories: backend expects "categories" as a JSON array (or CSV)
+      // arrays / objects (as JSON)
       fd.set("categories", JSON.stringify((data.categories || []).map(String)));
 
-      // sizes: [{ name, stock }]
       const sizesPayload = (Array.isArray(data.sizes) ? data.sizes : [])
-        .map(s => ({
+        .map((s) => ({
           name: String(s?.name ?? "").trim(),
           stock: Math.max(0, Number(s?.stock ?? 0)),
         }))
-        .filter(s => s.name);
+        .filter((s) => s.name);
       fd.set("sizes", JSON.stringify(sizesPayload));
 
-      // colors: must be array of objects [{ name }]
-      const colorNames = (Array.isArray(data.colors) ? data.colors : [])
-        .map((c) => String(c || "").trim())
+      // ⬇️ NEW: derive names from merged color objects
+      const colors = Array.isArray(data.colors) ? data.colors : [];
+      const colorNames = colors
+        .map((c) => String(c?.name || "").trim())
         .filter(Boolean);
-      const colorsPayload = colorNames.map((name) => ({ name }));
-      fd.set("colors", JSON.stringify(colorsPayload));
 
-      // description
+      // backend expects names array (or objects), we'll keep names array
+      fd.set("colors", JSON.stringify(colorNames));
+
       fd.set(
         "description",
         JSON.stringify({
@@ -204,20 +225,17 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         })
       );
 
-      // files: colorImages0, colorImages1, ... (order matches colors array above)
-      if (data.colorFiles) {
-        colorNames.forEach((name, index) => {
-          const files = data.colorFiles?.[name] || [];
-          if (Array.isArray(files) && files.length) {
-            const field = `colorImages${index}`;
-            files.forEach((f) => fd.append(field, f));
-          }
-        });
+      // ⬇️ Append files per color name: colorFiles[ColorName]
+      for (const c of colors) {
+        const name = String(c?.name || "").trim();
+        if (!name || !Array.isArray(c?.files)) continue;
+        for (const f of c.files!) {
+          fd.append(`colorFiles[${name}]`, f);
+        }
       }
 
-      // NOTE: If your route is '/products/create', change this URL.
+      // IMPORTANT: post to /products (your controller is wired there)
       const res = await api.post<Product>("/products/create", fd);
-
       const created = res.data;
       dispatch({ type: "ADD_PRODUCT", payload: created });
       return created;
@@ -232,10 +250,73 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  /* ---------------------- UPDATE (JSON only) ---------------------- */
   const updateProduct = async (id: string, data: UpdateProductInput) => {
     dispatch({ type: "START" });
     try {
       const res = await api.put<Product>(`/products/${id}`, data);
+      dispatch({ type: "UPDATE_PRODUCT", payload: res.data });
+      return res.data;
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || "Failed to update product";
+      dispatch({ type: "ERROR", payload: msg });
+      throw new Error(msg);
+    }
+  };
+
+  /* -------------------- UPDATE (multipart full) ------------------- */
+  const updateProductMultipart = async (id: string, data: UpdateProductMultipart) => {
+    dispatch({ type: "START" });
+    try {
+      const fd = new FormData();
+
+      // Only set fields that are provided (backend treats missing as "no change")
+      if (data.title != null) fd.set("title", String(data.title).trim());
+      if (data.price != null) fd.set("price", String(Number(data.price)));
+
+      if (data.categories) {
+        fd.set("categories", JSON.stringify(data.categories.map(String)));
+      }
+      if (data.sizes) {
+        const sizesPayload = data.sizes
+          .map((s) => ({
+            name: String(s?.name ?? "").trim(),
+            stock: Math.max(0, Number(s?.stock ?? 0)),
+          }))
+          .filter((s) => s.name);
+        fd.set("sizes", JSON.stringify(sizesPayload));
+      }
+      if (data.colors) {
+        const colorNames = data.colors.map((c) => String(c || "").trim()).filter(Boolean);
+        fd.set("colors", JSON.stringify(colorNames));
+      }
+      if (data.description) {
+        fd.set(
+          "description",
+          JSON.stringify({
+            intro: String(data.description.intro ?? "").trim(),
+            detailsTitle: String(data.description.detailsTitle ?? "").trim(),
+            details: Array.isArray(data.description.details)
+              ? data.description.details.map((d) => String(d ?? "").trim()).filter(Boolean)
+              : [],
+          })
+        );
+      }
+      if (data.removeImages) {
+        fd.set("removeImages", JSON.stringify(data.removeImages));
+      }
+      if (data.colorFiles) {
+        // If colors provided, we’ll use that order; otherwise append for whatever keys exist
+        const keys =
+          data.colors?.map((n) => String(n).trim()).filter(Boolean) ||
+          Object.keys(data.colorFiles);
+        for (const name of keys) {
+          const files = data.colorFiles[name] || [];
+          files.forEach((f) => fd.append(`colorFiles[${name}]`, f));
+        }
+      }
+
+      const res = await api.put<Product>(`/products/${id}`, fd);
       dispatch({ type: "UPDATE_PRODUCT", payload: res.data });
       return res.data;
     } catch (err: any) {
@@ -270,7 +351,8 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       fetchProductById,
 
       createProductMultipart,
-      updateProduct,
+      updateProduct,            // keep for metadata-only updates
+      updateProductMultipart,   // use when images/removals are involved
       deleteProduct,
 
       clearError,
