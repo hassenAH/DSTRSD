@@ -2,25 +2,22 @@
 import React, {
     useEffect,
     useMemo,
+    useRef,
     useState,
     ChangeEvent,
     FormEvent,
 } from "react";
 import styles from "./EditProduct.module.scss";
-import type { Product, UpdateProductInput } from "../../utils/ProductContext";
+import type { Product, UpdateProductMultipart } from "../../utils/ProductContext";
+import { useProducts } from "../../utils/ProductContext";
 import CategorySelect from "./CategorySelect";
 
 const AVAILABLE_SIZES = ["XS", "Small", "Medium", "Large", "X Large", "XXL"];
 
 type EditModalProps = {
     product: Product;
-    onSave: (
-        updated: UpdateProductInput & {
-            colorFiles?: Record<string, File[]>;
-            removeImages?: Record<string, string[]>;
-            categoryIds?: string[];
-        }
-    ) => void | Promise<void>;
+    /** Optional: if omitted, the modal will call context.updateProductMultipart itself */
+    onSave?: (updated: UpdateProductMultipart) => void | Promise<void>;
     onCancel: () => void;
 };
 
@@ -31,13 +28,12 @@ type ColorRow = {
     hex?: string;
     files: File[];
     previews: string[];
+    coverIndex: number | null;
 };
 
-export default function EditProductModal({
-    product,
-    onSave,
-    onCancel,
-}: EditModalProps) {
+export default function EditProductModal({ product, onSave, onCancel }: EditModalProps) {
+    const { updateProductMultipart, loading, error } = useProducts();
+
     // ---- Scalars ----
     const [title, setTitle] = useState(product.title);
     const [price, setPrice] = useState(String(product.price));
@@ -73,6 +69,7 @@ export default function EditProductModal({
                 hex: "#000000",
                 files: [],
                 previews: [],
+                coverIndex: null,
             }))
     );
 
@@ -87,19 +84,25 @@ export default function EditProductModal({
 
     const [removeImages, setRemoveImages] = useState<Record<string, string[]>>({});
 
-    // ---- Cleanup object URLs ----
+    // Track created object URLs for safe cleanup
+    const createdUrlsRef = useRef<string[]>([]);
     useEffect(() => {
         return () => {
-            colorRows.forEach((r) => r.previews.forEach((u) => URL.revokeObjectURL(u)));
+            [...createdUrlsRef.current, ...colorRows.flatMap((r) => r.previews)].forEach((u) => {
+                try {
+                    URL.revokeObjectURL(u);
+                } catch { }
+            });
+            createdUrlsRef.current = [];
         };
-    }, [colorRows]);
+    }, []);
 
     // ---- Sizes helpers ----
     const toggleSize = (size: string, enabled: boolean) => {
         setSizesSelected((prev) => {
-            const next = { ...prev };
+            const next = { ...prev } as Record<string, number>;
             if (enabled) {
-                if (!next[size]) next[size] = 0;
+                if (!Object.prototype.hasOwnProperty.call(next, size)) next[size] = 0;
             } else {
                 delete next[size];
             }
@@ -113,14 +116,31 @@ export default function EditProductModal({
     const addColorRow = () =>
         setColorRows((prev) => [
             ...prev,
-            { id: crypto.randomUUID(), name: "", hex: "#000000", files: [], previews: [] },
+            { id: crypto.randomUUID(), name: "", hex: "#000000", files: [], previews: [], coverIndex: null },
         ]);
 
     const removeColorRow = (id: string) => {
         setColorRows((prev) => {
             const row = prev.find((r) => r.id === id);
-            row?.previews.forEach((u) => URL.revokeObjectURL(u));
-            return prev.filter((r) => r.id !== id);
+            row?.previews.forEach((u) => {
+                try { URL.revokeObjectURL(u); } catch { }
+            });
+            const next = prev.filter((r) => r.id !== id);
+            // Also drop any existing bucket for this name
+            const name = row?.name?.trim();
+            if (name) {
+                setExistingColorImages((m) => {
+                    const copy = { ...m };
+                    delete copy[name];
+                    return copy;
+                });
+                setRemoveImages((m) => {
+                    const copy = { ...m };
+                    delete copy[name];
+                    return copy;
+                });
+            }
+            return next;
         });
     };
 
@@ -137,7 +157,7 @@ export default function EditProductModal({
         });
     };
 
-    // When renaming a color, also move its existing-images bucket
+    // When renaming a color, also move its existing-images bucket and removeImages bucket
     const updateColorName = (id: string, name: string) => {
         name = name.trim();
         setColorRows((prev) => prev.map((r) => (r.id === id ? { ...r, name } : r)));
@@ -149,9 +169,8 @@ export default function EditProductModal({
                 copy[name] = copy[oldName];
                 delete copy[oldName];
             }
-            // ensure removeImages mapping follows too
             setRemoveImages((rem) => {
-                const rcopy = { ...rem };
+                const rcopy = { ...rem } as Record<string, string[]>;
                 if (rcopy[oldName] && !rcopy[name]) {
                     rcopy[name] = rcopy[oldName];
                     delete rcopy[oldName];
@@ -173,11 +192,22 @@ export default function EditProductModal({
             prev.map((r) => {
                 if (r.id !== id) return r;
                 const files = r.files.concat(added);
-                const previews = r.previews.concat(added.map((f) => URL.createObjectURL(f)));
-                return { ...r, files, previews };
+                const previews = r.previews.concat(
+                    added.map((f) => {
+                        const url = URL.createObjectURL(f);
+                        createdUrlsRef.current.push(url);
+                        return url;
+                    })
+                );
+                const coverIndex = r.coverIndex == null && files.length > 0 ? 0 : r.coverIndex;
+                return { ...r, files, previews, coverIndex };
             })
         );
         e.currentTarget.value = "";
+    };
+
+    const setCover = (id: string, idx: number) => {
+        setColorRows((prev) => prev.map((r) => (r.id === id ? { ...r, coverIndex: idx } : r)));
     };
 
     const removeColorFile = (id: string, idx: number) => {
@@ -186,22 +216,31 @@ export default function EditProductModal({
                 if (r.id !== id) return r;
                 const files = r.files.slice();
                 const previews = r.previews.slice();
-                if (previews[idx]) URL.revokeObjectURL(previews[idx]);
+                const url = previews[idx];
+                if (url) {
+                    try { URL.revokeObjectURL(url); } catch { }
+                    createdUrlsRef.current = createdUrlsRef.current.filter((u) => u !== url);
+                }
                 files.splice(idx, 1);
                 previews.splice(idx, 1);
-                return { ...r, files, previews };
+                let coverIndex = r.coverIndex;
+                if (coverIndex != null) {
+                    if (idx === coverIndex) coverIndex = files.length ? 0 : null;
+                    else if (idx < coverIndex) coverIndex = coverIndex - 1;
+                }
+                return { ...r, files, previews, coverIndex };
             })
         );
     };
 
     const removeExistingColorImage = (colorName: string, url: string) => {
         setExistingColorImages((prev) => {
-            const next = { ...prev };
+            const next = { ...prev } as Record<string, string[]>;
             next[colorName] = (next[colorName] || []).filter((x) => x !== url);
             return next;
         });
         setRemoveImages((prev) => {
-            const next = { ...prev };
+            const next = { ...prev } as Record<string, string[]>;
             next[colorName] = Array.from(new Set([...(next[colorName] || []), url]));
             return next;
         });
@@ -235,65 +274,67 @@ export default function EditProductModal({
     // ---- Validation ----
     const validate = () => {
         if (!title.trim()) return "Title is required.";
-        if (!price || isNaN(Number(price))) return "Valid price is required.";
+        const n = Number(price);
+        if (price.trim() === "" || Number.isNaN(n) || n < 0) return "Valid non-negative price is required.";
         if (!intro.trim()) return "Intro description is required.";
         if (!categoryIds.length) return "Select at least one category.";
         if (!colorsForBackend.length) return "Add at least one color.";
         return "";
     };
 
+    const canSubmit = validate() === "";
+
     // ---- Submit ----
-    const submit = (e: FormEvent) => {
+    const submit = async (e: FormEvent) => {
         e.preventDefault();
         const v = validate();
         if (v) return alert(v);
 
-        const sizesPayload = Object.entries(sizesSelected).map(([name, stock]) => ({
-            name,
-            stock,
-        }));
+        const sizesPayload = Object.entries(sizesSelected).map(([name, stock]) => ({ name, stock }));
 
-        // Build colorFiles from rows (keyed by color name)
+        // Build colorFiles from rows (keyed by color name), cover-first ordering
         const colorFiles: Record<string, File[]> = {};
         colorRows.forEach((row) => {
             const name = row.name.trim();
             if (!name || row.files.length === 0) return;
-            colorFiles[name] = row.files.slice(); // keep order
+            let ordered = row.files.slice();
+            if (row.coverIndex != null && row.files[row.coverIndex]) {
+                const cover = row.files[row.coverIndex];
+                ordered = [cover, ...row.files.filter((_, i) => i !== row.coverIndex)];
+            }
+            colorFiles[name] = ordered;
         });
 
-        // Build colors with existing images (existing kept under the (possibly renamed) key)
-        const colorsPayload = colorsForBackend.map((name) => ({
-            name,
-            images: existingColorImages[name] || [],
-        }));
-
-        const payload: UpdateProductInput & {
-            colorFiles?: Record<string, File[]>;
-            removeImages?: Record<string, string[]>;
-            categoryIds?: string[];
-        } = {
-            title,
+        const payload: UpdateProductMultipart = {
+            title: title.trim(),
             price: Number(price),
-            stock: sizesPayload.reduce((s, it) => s + (it.stock || 0), 0),
+            categories: categoryIds,
             sizes: sizesPayload,
-            colors: colorsPayload,
+            colors: colorsForBackend, // names only: conveys renames and order
             description: {
                 intro,
                 detailsTitle,
-                details: details.filter(Boolean),
+                details: details.map((d) => d.trim()).filter(Boolean),
             },
-            colorFiles,
             removeImages,
-            categoryIds,
+            colorFiles,
         };
 
-        onSave(payload);
+        try {
+            if (onSave) await onSave(payload);
+            else await updateProductMultipart(product._id, payload);
+        } catch (err) {
+            // Parent/context will usually surface error; keep UI responsive
+            console.error(err);
+        }
     };
 
     return (
         <div className={styles.modal} role="dialog" aria-modal="true">
             <form className={styles.modalContent} onSubmit={submit}>
                 <h2>Edit “{product.title}”</h2>
+
+                {error && <div className={styles.error}>{String(error)}</div>}
 
                 <label>Title</label>
                 <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Product title" />
@@ -345,7 +386,7 @@ export default function EditProductModal({
                     })}
                 </div>
 
-                {/* ---------- Colors Editor (like Add) ---------- */}
+                {/* ---------- Colors Editor ---------- */}
                 <div className={styles.hr} />
                 <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
                     <h3 style={{ margin: 0 }}>Colors</h3>
@@ -361,14 +402,20 @@ export default function EditProductModal({
                     {colorRows.map((row, idx) => {
                         const existing = existingColorImages[row.name] || [];
                         return (
-                            <section key={row.id} className={styles.colorSection}>
-                                <header className={styles.colorHeader}>
+                            <section
+                                key={row.id}
+                                className={styles.colorSection}
+                                aria-label={`Color ${row.name || idx + 1}`}
+                                style={{ border: "1px dashed var(--border,#4444)", borderRadius: 12, padding: 12 }}
+                            >
+                                <header className={styles.colorHeader} style={{ display: "flex", gap: 12, alignItems: "center" }}>
                                     <input
                                         type="text"
                                         value={row.name}
                                         onChange={(e) => updateColorName(row.id, e.target.value)}
                                         placeholder="Color name (e.g., Black)"
                                         aria-label="Color name"
+                                        style={{ flex: 1 }}
                                     />
                                     <input
                                         type="color"
@@ -376,6 +423,7 @@ export default function EditProductModal({
                                         onChange={(e) => updateColorHex(row.id, e.target.value)}
                                         aria-label="Color swatch"
                                         title="Swatch (optional)"
+                                        style={{ width: 40, height: 36, padding: 0, border: "none", cursor: "pointer" }}
                                     />
                                     <div style={{ marginLeft: "auto", display: "inline-flex", gap: 6 }}>
                                         <button
@@ -412,20 +460,17 @@ export default function EditProductModal({
 
                                 {/* Existing images */}
                                 {existing.length > 0 && (
-                                    <div className={styles.gallerySmall}>
+                                    <div
+                                        className={styles.gallerySmall}
+                                        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12, marginTop: 12 }}
+                                    >
                                         {existing.map((url) => (
-                                            <article key={url} className={styles.tileSmall}>
-                                                <img className={styles.thumb} src={url} alt={`${row.name}-img`} />
-                                                <div className={styles.actions}>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeExistingColorImage(row.name, url)}
-                                                        title="Remove"
-                                                    >
-                                                        🗑️
-                                                    </button>
+                                            <article key={url} className={styles.tileSmall} style={{ position: "relative" }}>
+                                                <img className={styles.thumb} src={url} alt={`${row.name}-img`} style={{ width: "100%", height: 120, objectFit: "cover" }} />
+                                                <div className={styles.actions} style={{ position: "absolute", inset: 8, display: "flex", justifyContent: "flex-end" }}>
+                                                    <button type="button" onClick={() => removeExistingColorImage(row.name, url)} title="Remove">🗑️</button>
                                                 </div>
-                                                <div className={styles.meta}>
+                                                <div className={styles.meta} style={{ display: "flex", justifyContent: "space-between", padding: "6px 8px", fontSize: 12 }}>
                                                     <span className={styles.name}>Existing</span>
                                                     <span className={styles.size}>—</span>
                                                 </div>
@@ -435,39 +480,32 @@ export default function EditProductModal({
                                 )}
 
                                 {/* Upload new ones */}
-                                <label className={styles.dropzoneSmall}>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        multiple
-                                        onChange={(e) => handleColorFilesSelect(row.id, e)}
-                                    />
+                                <label className={styles.dropzoneSmall} style={{ display: "grid", placeItems: "center", padding: 16, border: "1px solid var(--border,#4444)", borderRadius: 12, marginTop: 8 }}>
+                                    <input type="file" accept="image/*" multiple onChange={(e) => handleColorFilesSelect(row.id, e)} />
                                     <div className={styles.dzTextSmall}>Click to choose images</div>
                                 </label>
 
-                                <div className={styles.gallerySmall}>
-                                    {row.previews.map((src, i) => (
-                                        <article key={src} className={styles.tileSmall}>
-                                            <img className={styles.thumb} src={src} alt={`${row.name}-preview-${i}`} />
-                                            <div className={styles.actions}>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeColorFile(row.id, i)}
-                                                    title="Remove"
-                                                >
-                                                    🗑️
-                                                </button>
-                                            </div>
-                                            <div className={styles.meta}>
-                                                <span className={styles.name}>
-                                                    {row.files[i]?.name || `image-${i + 1}`}
-                                                </span>
-                                                <span className={styles.size}>
-                                                    {row.files[i] ? formatBytes(row.files[i].size) : "—"}
-                                                </span>
-                                            </div>
-                                        </article>
-                                    ))}
+                                <div className={styles.gallerySmall} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12, marginTop: 12 }}>
+                                    {row.previews.map((src, i) => {
+                                        const isCover = row.coverIndex === i;
+                                        return (
+                                            <article key={src} className={styles.tileSmall} style={{ position: "relative", border: `2px solid ${isCover ? "var(--accent,#2563eb)" : "transparent"}`, borderRadius: 12, overflow: "hidden", outline: "1px solid var(--border,#4444)" }}>
+                                                <img className={styles.thumb} src={src} alt={`${row.name}-preview-${i}`} style={{ width: "100%", height: 120, objectFit: "cover" }} />
+                                                <div className={styles.actions} style={{ position: "absolute", inset: 8, display: "flex", justifyContent: "space-between", gap: 6 }}>
+                                                    <button type="button" onClick={() => setCover(row.id, i)} title="Set cover" style={{ padding: "4px 8px", borderRadius: 999, border: "none", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 12 }}>
+                                                        {isCover ? "Cover ✓" : "Set cover"}
+                                                    </button>
+                                                    <button type="button" onClick={() => removeColorFile(row.id, i)} title="Remove" style={{ padding: "4px 8px", borderRadius: 999, border: "none", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 12 }}>
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                                <div className={styles.meta} style={{ display: "flex", justifyContent: "space-between", padding: "6px 8px", fontSize: 12 }}>
+                                                    <span className={styles.name}>{product.title}</span>
+                                                    <span className={styles.size}>{formatBytes(row.files[i]?.size || 0)}</span>
+                                                </div>
+                                            </article>
+                                        );
+                                    })}
                                 </div>
                             </section>
                         );
@@ -486,21 +524,13 @@ export default function EditProductModal({
                 />
 
                 <label>Details Title</label>
-                <input
-                    value={detailsTitle}
-                    onChange={(e) => setDetailsTitle(e.target.value)}
-                    placeholder="Product Details"
-                />
+                <input value={detailsTitle} onChange={(e) => setDetailsTitle(e.target.value)} placeholder="Product Details" />
 
                 <label>Details (bullets)</label>
                 <div className={styles.detailsList}>
                     {details.map((d, i) => (
                         <div key={i} className={styles.detailRow}>
-                            <input
-                                value={d}
-                                onChange={(e) => updateDetailAt(i, e.target.value)}
-                                placeholder={`Detail #${i + 1}`}
-                            />
+                            <input value={d} onChange={(e) => updateDetailAt(i, e.target.value)} placeholder={`Detail #${i + 1}`} />
                             <button type="button" className={styles.iconBtn} onClick={() => removeDetailAt(i)}>
                                 ✕
                             </button>
@@ -512,7 +542,7 @@ export default function EditProductModal({
                 </div>
 
                 <div className={styles.modalActions}>
-                    <button type="submit">Save Changes</button>
+                    <button type="submit" disabled={!canSubmit || loading}>{loading ? "Saving..." : "Save Changes"}</button>
                     <button type="button" onClick={onCancel} className={styles.secondaryBtn}>
                         Cancel
                     </button>

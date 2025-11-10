@@ -3,8 +3,11 @@ import styles from "./ProductPage.module.scss";
 import ProductCard from "../components/UI/ProductCard";
 import { useCart } from "../../utils/CartContext";
 import { useProducts } from "../../utils/ProductContext";
-import type { Product as ApiProduct } from "../../utils/ProductContext";
 
+
+
+import type { Product as ApiProduct } from "../../utils/ProductContext";
+import { useCategories } from "../../utils/CategoryContext";
 type FilterType = "FEATURED" | "NEWEST" | "SIZE" | "ALL";
 type SizeType = "SMALL" | "MEDIUM" | "LARGE";
 
@@ -25,7 +28,7 @@ const objectIdTime = (id: string) => {
 export default function ProductsPage() {
     const { addToCart } = useCart();
     const { products = [], loading, error, fetchAllProducts } = useProducts();
-
+    const { categories } = useCategories();
     const [activeFilter, setActiveFilter] = useState<FilterType>("FEATURED");
     const [activeCategory, setActiveCategory] = useState<string>("All");
     const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
@@ -38,24 +41,24 @@ export default function ProductsPage() {
         }
     }, [fetchAllProducts, products?.length]);
 
-    // derive categories from products if available, fallback to static list
-    const derivedCategories = useMemo(() => {
-        const set = new Set<string>();
-        products.forEach((p) => {
-            (p.categories || []).forEach((c) => {
-                if (c) set.add(c);
-            });
-        });
-        return ["All", ...Array.from(set).sort()];
-    }, [products]);
 
-    const categories = derivedCategories.length ? derivedCategories : ["All", "Men", "Women", "Accessories"];
+    const categorie = ["All", "Men", "Women", "Accessories"];
 
     // Pick current category products
     const current: ApiProduct[] = useMemo(() => {
         if (activeCategory === "All") return products;
-        return products.filter((p) => (p.categories || []).some((c) => c === activeCategory));
-    }, [products, activeCategory]);
+
+        // find the category object by name
+        const matchedCategory = categories.find((cat) => cat.name === activeCategory);
+        if (!matchedCategory) return products; // fallback if category not found
+
+        const categoryId = matchedCategory._id;
+
+        // filter products whose categories include that ID
+        return products.filter((p) =>
+            (p.categories || []).some((c) => c === categoryId)
+        );
+    }, [products, activeCategory, categories]);
 
     // Filter + sort based on segmented control
     const filtered = useMemo(() => {
@@ -118,7 +121,7 @@ export default function ProductsPage() {
 
                 {/* Category chips */}
                 <nav className={styles.categoryChips} aria-label="Categories">
-                    {categories.map((c) => (
+                    {categorie.map((c) => (
                         <button
                             key={c}
                             className={`${styles.chip} ${c === activeCategory ? styles.chip__active : ""}`}

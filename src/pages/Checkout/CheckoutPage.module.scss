@@ -490,3 +490,51 @@
 .summary {
     min-width: 0;
 }
+
+.sizeSelectorInline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 4px;
+}
+
+.sizeOptions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.sizeBtn {
+    border: 1px solid var(--subtle);
+    background: white;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.sizeBtn:hover:not(:disabled) {
+    background: var(--subtle);
+}
+
+.sizeBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.activeSize {
+    background: var(--ink);
+    color: white;
+}
+
+.stockNote {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+
+.loading {
+    color: var(--muted);
+    font-size: 0.85rem;
+}

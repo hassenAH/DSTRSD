@@ -48,7 +48,7 @@ export type CreateProductMultipart = {
   price: number;
   categories: string[];
   sizes: SizeVariant[];
-  // ⬇️ merged: one array, each with name + files
+  // merged: one array, each with name + files
   colors: ColorCreate[];
   description: {
     intro: string;
@@ -72,6 +72,8 @@ export type UpdateProductMultipart = {
 };
 
 export type UpdateProductInput = Partial<Omit<Product, "_id" | "__v">>;
+
+/* ----------------------------- State ----------------------------- */
 
 type ProductState = {
   products: Product[];
@@ -160,12 +162,12 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   const fetchAllProducts = async () => {
     dispatch({ type: "START" });
     try {
-      const res = await api.get<Product[]>("/products"); // simple list
+      const res = await api.get<Product[]>("/products");
       dispatch({ type: "SET_PRODUCTS", payload: res.data });
     } catch (err: any) {
       dispatch({
         type: "ERROR",
-        payload: err.response?.data?.message || err.message || "Failed to load products",
+        payload: err?.response?.data?.message || err.message || "Failed to load products",
       });
     }
   };
@@ -178,12 +180,12 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       dispatch({
         type: "ERROR",
-        payload: err.response?.data?.message || err.message || "Failed to load product",
+        payload: err?.response?.data?.message || err.message || "Failed to load product",
       });
     }
   };
 
-  // utils/ProductContext.tsx
+  /* ------------------------ CREATE (multipart) ----------------------- */
   const createProductMultipart = async (data: CreateProductMultipart) => {
     dispatch({ type: "START" });
 
@@ -194,7 +196,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       fd.set("title", String(data.title ?? "").trim());
       fd.set("price", String(Number(data.price)));
 
-      // arrays / objects (as JSON)
+      // arrays / objects (as JSON strings)
       fd.set("categories", JSON.stringify((data.categories || []).map(String)));
 
       const sizesPayload = (Array.isArray(data.sizes) ? data.sizes : [])
@@ -205,13 +207,11 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         .filter((s) => s.name);
       fd.set("sizes", JSON.stringify(sizesPayload));
 
-      // ⬇️ NEW: derive names from merged color objects
+      // names array derived from merged color objects
       const colors = Array.isArray(data.colors) ? data.colors : [];
       const colorNames = colors
         .map((c) => String(c?.name || "").trim())
         .filter(Boolean);
-
-      // backend expects names array (or objects), we'll keep names array
       fd.set("colors", JSON.stringify(colorNames));
 
       fd.set(
@@ -225,7 +225,15 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         })
       );
 
-      // ⬇️ Append files per color name: colorFiles[ColorName]
+      // Append files per color name: colorFiles[ColorName]
+      for (const c of colors) {
+        const name = String(c?.name || "").trim();
+        if (!name || !Array.isArray(c?.files)) continue;
+        for (const f of c.files!) {
+          fd.append(`colorFiles[${name}]`, f);
+        }
+      }
+      // Append files per color name: colorFiles[ColorName]
       for (const c of colors) {
         const name = String(c?.name || "").trim();
         if (!name || !Array.isArray(c?.files)) continue;
@@ -234,15 +242,46 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // IMPORTANT: post to /products (your controller is wired there)
-      const res = await api.post<Product>("/products/create", fd);
+      /* 🔎 Debug: log FormData contents (remove in production) */
+      console.groupCollapsed("[createProductMultipart] FormData");
+      const fieldCounts: Record<string, number> = {};
+      fd.forEach((v, k) => {
+        fieldCounts[k] = (fieldCounts[k] || 0) + 1;
+        if (v instanceof File) {
+          console.log(
+            k,
+            "→ File:",
+            v.name,
+            "| type:", v.type || "file",
+            "| size:", `${v.size}B`
+          );
+        } else {
+          try {
+            console.log(k, "→", JSON.parse(v)); // pretty-print JSON fields
+          } catch {
+            console.log(k, "→", v);
+          }
+        }
+      });
+      console.log("Field counts:", fieldCounts);
+      console.groupEnd();
+
+
+      // IMPORTANT: aligned to POST /products
+      const res = await api.post<Product>("/products/create", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+        transformRequest: [(d) => d],
+        timeout: 45000,
+        onUploadProgress: (e) => console.log("upload", e.loaded, "/", e.total ?? "unknown"),
+      });
+
       const created = res.data;
       dispatch({ type: "ADD_PRODUCT", payload: created });
       return created;
     } catch (err: any) {
       const msg =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
         err.message ||
         "Failed to create product";
       dispatch({ type: "ERROR", payload: msg });
@@ -258,7 +297,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: "UPDATE_PRODUCT", payload: res.data });
       return res.data;
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Failed to update product";
+      const msg = err?.response?.data?.message || err.message || "Failed to update product";
       dispatch({ type: "ERROR", payload: msg });
       throw new Error(msg);
     }
@@ -316,11 +355,16 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const res = await api.put<Product>(`/products/${id}`, fd);
+      const res = await api.put<Product>(`/products/${id}`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+        transformRequest: [(d) => d],
+        timeout: 45000,
+        onUploadProgress: (e) => console.log("upload", e.loaded, "/", e.total ?? "unknown"),
+      });
       dispatch({ type: "UPDATE_PRODUCT", payload: res.data });
       return res.data;
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Failed to update product";
+      const msg = err?.response?.data?.message || err.message || "Failed to update product";
       dispatch({ type: "ERROR", payload: msg });
       throw new Error(msg);
     }
@@ -332,7 +376,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       await api.delete(`/products/${id}`);
       dispatch({ type: "REMOVE_PRODUCT", payload: id });
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Failed to delete product";
+      const msg = err?.response?.data?.message || err.message || "Failed to delete product";
       dispatch({ type: "ERROR", payload: msg });
       throw new Error(msg);
     }
@@ -343,7 +387,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<ProductContextShape>(
     () => ({
       products: state.products,
-      currentProduct: state.currentProduct,
+      currentProduct: state.products[0],
       loading: state.loading,
       error: state.error,
 
@@ -351,8 +395,8 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       fetchProductById,
 
       createProductMultipart,
-      updateProduct,            // keep for metadata-only updates
-      updateProductMultipart,   // use when images/removals are involved
+      updateProduct, // metadata-only updates
+      updateProductMultipart, // use when images/removals are involved
       deleteProduct,
 
       clearError,

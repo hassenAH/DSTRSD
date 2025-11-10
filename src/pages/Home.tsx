@@ -28,7 +28,7 @@ export default function Home() {
       />
 
       <ProductInfo
-
+        id={currentProduct!._id}
         category={currentProduct!.categories[0]}
         title={currentProduct!.title}
         price={currentProduct!.price.toString()}

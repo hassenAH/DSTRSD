@@ -17,6 +17,7 @@ import ProductDetailsPage from "./pages/ProductsList/ProductDetailsPage";
 import { ProductProvider } from "./utils/ProductContext";
 import DashboardPage from "./pages/Dashboard/Dashboard";
 import { CategoryProvider } from "./utils/CategoryContext";
+import OrdersPage from "./pages/Dashboard/Orders/OrdersPage";
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -29,6 +30,7 @@ function AnimatedRoutes() {
         <Route path="/products" element={<PageWrapper><ProductsPage /></PageWrapper>} />
         <Route element={<RequireAuth />}></Route>
         <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
+        <Route path="/orders" element={<OrdersPage />} />
         <Route path="/dashboard" element={<PageWrapper><DashboardPage /></PageWrapper>} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
@@ -60,7 +62,7 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
 
 function AppContent() {
   const location = useLocation();
-  const hideNavbar = location.pathname === '/dashboard';
+  const hideNavbar = location.pathname === '/dashboard' || location.pathname === '/orders';
 
   return (
     <>

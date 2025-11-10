@@ -5,7 +5,6 @@ import React, {
   ChangeEvent,
   FormEvent,
   useEffect,
-  Fragment,
   useRef,
 } from "react";
 import styles from "./AddProduct.module.scss";
@@ -57,12 +56,16 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
 
   const [errMsg, setErrMsg] = useState<string>("");
 
-  // Clean up object URLs on unmount
+  // Keep track of all created object URLs to clean up safely on unmount
+  const createdUrlsRef = useRef<string[]>([]);
   useEffect(() => {
     return () => {
-      colorRows.forEach((row) => row.previews.forEach((url) => URL.revokeObjectURL(url)));
+      createdUrlsRef.current.forEach((u) => {
+        try { URL.revokeObjectURL(u); } catch { }
+      });
+      createdUrlsRef.current = [];
     };
-  }, [colorRows]);
+  }, []);
 
   // ----- Helpers -----
   const formatBytes = (n: number) => {
@@ -74,9 +77,9 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
 
   const toggleSize = (size: string, enabled: boolean) => {
     setSizesSelected((prev) => {
-      const next = { ...prev };
+      const next = { ...prev } as Record<string, number>;
       if (enabled) {
-        if (!next[size]) next[size] = 0;
+        if (!next[size] && next[size] !== 0) next[size] = 0;
       } else {
         delete next[size];
       }
@@ -105,7 +108,9 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
   const removeColorRow = (id: string) => {
     setColorRows((prev) => {
       const row = prev.find((r) => r.id === id);
-      row?.previews.forEach((url) => URL.revokeObjectURL(url));
+      row?.previews.forEach((url) => {
+        try { URL.revokeObjectURL(url); } catch { }
+      });
       return prev.filter((r) => r.id !== id);
     });
   };
@@ -130,22 +135,58 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
   const updateColorHex = (id: string, hex: string) => {
     setColorRows((prev) => prev.map((r) => (r.id === id ? { ...r, hex } : r)));
   };
+  const fileKey = (f: File) => `${f.name}::${f.size}::${f.lastModified}`;
+
+  function mergeUniqueFiles(existing: File[], incoming: File[]) {
+    const seen = new Set(existing.map(fileKey));
+    const trulyNew: File[] = [];
+    for (const f of incoming) {
+      const k = fileKey(f);
+      if (!seen.has(k)) {
+        seen.add(k);
+        trulyNew.push(f);
+      }
+    }
+    return [...existing, ...trulyNew];
+  }
 
   const handleColorFilesSelect = (id: string, e: ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    const added = Array.from(e.target.files);
+    const list = e.target.files;
+    if (!list) return;
+
+    const added = Array.from(list);
+
     setColorRows((prev) =>
       prev.map((r) => {
         if (r.id !== id) return r;
-        const newFiles = r.files.concat(added);
-        const newPreviews = r.previews.concat(added.map((f) => URL.createObjectURL(f)));
+
+        // 1) dedupe files
+        const nextFiles = mergeUniqueFiles(r.files, added);
+
+        // 2) create URLs **only** for the truly new ones
+        const existingKeys = new Set(r.files.map(fileKey));
+        const newUrls: string[] = [];
+        for (const f of added) {
+          const k = fileKey(f);
+          if (!existingKeys.has(k)) {
+            const url = URL.createObjectURL(f);
+            createdUrlsRef.current.push(url);
+            newUrls.push(url);
+          }
+        }
+
+        const nextPreviews = r.previews.concat(newUrls);
         const coverIndex =
-          r.coverIndex == null && newFiles.length > 0 ? 0 : r.coverIndex;
-        return { ...r, files: newFiles, previews: newPreviews, coverIndex };
+          r.coverIndex == null && nextFiles.length > 0 ? 0 : r.coverIndex;
+
+        return { ...r, files: nextFiles, previews: nextPreviews, coverIndex };
       })
     );
+
+    // Clear the input so choosing the same file again will fire onChange reliably
     e.currentTarget.value = "";
   };
+
 
   const removeColorFile = (id: string, idx: number) => {
     setColorRows((prev) =>
@@ -153,7 +194,11 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
         if (r.id !== id) return r;
         const files = r.files.slice();
         const previews = r.previews.slice();
-        if (previews[idx]) URL.revokeObjectURL(previews[idx]);
+        const url = previews[idx];
+        if (url) {
+          try { URL.revokeObjectURL(url); } catch { }
+          createdUrlsRef.current = createdUrlsRef.current.filter((u) => u !== url);
+        }
         files.splice(idx, 1);
         previews.splice(idx, 1);
 
@@ -168,14 +213,11 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
   };
 
   const setCover = (id: string, idx: number) => {
-    setColorRows((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, coverIndex: idx } : r))
-    );
+    setColorRows((prev) => prev.map((r) => (r.id === id ? { ...r, coverIndex: idx } : r)));
   };
 
   // Description helpers
-  const handleAddDetail = () =>
-    setDescription((d) => ({ ...d, details: [...d.details, ""] }));
+  const handleAddDetail = () => setDescription((d) => ({ ...d, details: [...d.details, ""] }));
 
   const handleDetailChange = (idx: number, value: string) =>
     setDescription((d) => {
@@ -200,15 +242,16 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
   // Validation
   const validate = () => {
     if (!title.trim()) return "Title is required.";
-    if (!price || isNaN(Number(price))) return "Valid price is required.";
+    const n = Number(price);
+    if (price.trim() === "" || Number.isNaN(n) || n < 0) return "Valid non-negative price is required.";
     if (!categoryIds.length) return "Please pick at least one category.";
 
     // Require at least one color with a name
-    const namedColors = colorRows.filter(r => r.name.trim());
+    const namedColors = colorRows.filter((r) => r.name.trim());
     if (!namedColors.length) return "At least one color is required.";
 
     // If a row has files, it must have a name
-    const unnamedWithFiles = colorRows.some(r => r.files.length && !r.name.trim());
+    const unnamedWithFiles = colorRows.some((r) => r.files.length && !r.name.trim());
     if (unnamedWithFiles) return "Please name each color that has images.";
 
     const hasAnyImage = colorRows.some((r) => r.files.length > 0);
@@ -218,6 +261,20 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
     if (!description.detailsTitle.trim()) return "Description detailsTitle is required.";
     return "";
   };
+
+  const resetForm = () => {
+    setTitle("");
+    setPrice("");
+    setCategoryIds([]);
+    setSizesSelected({});
+    // revoke previews for all rows
+    colorRows.forEach((row) => row.previews.forEach((u) => { try { URL.revokeObjectURL(u); } catch { } }));
+    setColorRows([]);
+    setDescription({ intro: "", detailsTitle: "Product Details", details: [""] });
+    createdUrlsRef.current.forEach((u) => { try { URL.revokeObjectURL(u); } catch { } });
+    createdUrlsRef.current = [];
+  };
+
   // Submit
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -229,31 +286,17 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
       name,
       stock,
     }));
-    // Build colorFiles with cover first for each color
-    const colorFiles: Record<string, File[]> = {};
-    colorRows.forEach((row) => {
-      const name = row.name.trim();
-      if (!name) return;
-      if (row.files.length === 0) return;
-      let ordered = row.files.slice();
-      if (row.coverIndex != null && row.files[row.coverIndex]) {
-        const cover = row.files[row.coverIndex];
-        ordered = [cover, ...row.files.filter((_, i) => i !== row.coverIndex)];
-      }
-      colorFiles[name] = ordered;
-    });
+
+    // Build merged colors array with cover-first ordering
     const colorsMerged = colorRows
-      .filter((row) => row.name.trim()) // only named colors
+      .filter((row) => row.name.trim())
       .map((row) => {
         let files = row.files.slice();
         if (row.coverIndex != null && row.files[row.coverIndex]) {
           const cover = row.files[row.coverIndex];
           files = [cover, ...row.files.filter((_, i) => i !== row.coverIndex)];
         }
-        return {
-          name: row.name.trim(),
-          files,
-        };
+        return { name: row.name.trim(), files };
       });
 
     const payload: CreateProductMultipart = {
@@ -261,22 +304,24 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
       price: Number(price),
       categories: categoryIds,
       sizes: sizesPayload,
-      colors: colorsMerged, // ⬅️ merged array
+      colors: colorsMerged, // merged array as expected by ProductContext
       description: {
         intro: description.intro,
         detailsTitle: description.detailsTitle,
-        details: description.details.filter(Boolean),
+        details: description.details.map((d) => d.trim()).filter(Boolean),
       },
     };
 
     try {
       const created = await createProductMultipart(payload);
       onAdd?.(created);
-      // clear…
+      resetForm();
     } catch (err: any) {
-      setErrMsg(err.message || "Something went wrong");
+      setErrMsg(err?.message || "Something went wrong");
     }
   };
+
+  const canSubmit = useMemo(() => validate() === "", [title, price, categoryIds, colorRows, description, sizesSelected]);
 
   return (
     <div className={styles.modal} role="dialog" aria-modal="true">
@@ -443,8 +488,10 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
                   type="file"
                   accept="image/*"
                   multiple
+                  onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
                   onChange={(e) => handleColorFilesSelect(row.id, e)}
                 />
+
                 <div className={styles.dzTextSmall}>Click to choose images</div>
               </label>
 
@@ -490,7 +537,6 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
                       />
 
                       <div
-                        // if your CSS module .actions hides this, remove className or ensure it doesn't set display:none
                         className={styles.actions}
                         style={{
                           position: "absolute",
@@ -499,8 +545,8 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
                           gap: 6,
                           justifyContent: "space-between",
                           alignItems: "center",
-                          pointerEvents: "none", // keep parent non-interactive
-                          zIndex: 2,             // make sure it's above the image
+                          pointerEvents: "none",
+                          zIndex: 2,
                         }}
                       >
                         <button
@@ -514,7 +560,7 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
                             borderRadius: 999,
                             border: "none",
                             background: "rgba(0,0,0,0.6)",
-                            color: "#fff",             // <-- fix: visible text color
+                            color: "#fff",
                             fontSize: 12,
                           }}
                         >
@@ -532,7 +578,7 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
                             borderRadius: 999,
                             border: "none",
                             background: "rgba(0,0,0,0.6)",
-                            color: "#fff",             // <-- fix: remove the stray '#', keep text white
+                            color: "#fff",
                             fontSize: 12,
                           }}
                         >
@@ -551,7 +597,10 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
                           fontSize: 12,
                         }}
                       >
-                        <span className={styles.name} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <span
+                          className={styles.name}
+                          style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                        >
                           {row.files[i]?.name || `image-${i + 1}`}
                         </span>
                         <span className={styles.size}>
@@ -613,19 +662,8 @@ export default function AddProduct({ onAdd, onCancel }: Props) {
 
         <div className={styles.hr} />
 
-
-
         <div className={styles.modalActions}>
-          <button
-            type="submit"
-            disabled={
-              loading ||
-              !title.trim() ||
-              !price ||
-              !categoryIds.length ||
-              colorRows.every(r => !r.name.trim()) // at least one named color
-            }
-          >
+          <button type="submit" disabled={loading || !canSubmit}>
             {loading ? "Saving..." : "Add Product"}
           </button>
 

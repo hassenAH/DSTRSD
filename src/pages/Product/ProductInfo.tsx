@@ -10,6 +10,7 @@ import { useCart, type CartItem } from "../../utils/CartContext";
 import type { SizeVariant, ColorVariant, ProductDescription } from "../../utils/ProductContext";
 
 interface ProductInfoProps {
+  id: string;
   category: string;
   title: string;
   price: string; // e.g. "79 Dt"
@@ -19,6 +20,7 @@ interface ProductInfoProps {
 }
 
 export default function ProductInfo({
+  id,
   colors = [],
   title,
   price,
@@ -46,7 +48,7 @@ export default function ProductInfo({
 
   const item: CartItem = useMemo(
     () => ({
-      id: `${title}-${selectedColor}-${selectedSize}`.toLowerCase(),
+      id: id,
       name: title,
       image: imagesForColor[0] ?? "", // first image of selected color
       price: unitPrice,

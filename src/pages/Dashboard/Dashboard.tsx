@@ -8,6 +8,7 @@ import DashboardSidebar from "./Sidebar/SidebarDashboard";
 // IMPORTANT: use the context Product type, not the local one
 import { useProducts, type Product, CreateProductMultipart } from "../../utils/ProductContext";
 import CategoriesPage from "./CategoriesPage";
+import EditProductModal from "./EditProductModal";
 
 
 export default function DashboardPage() {
@@ -118,15 +119,15 @@ export default function DashboardPage() {
           />
         )}
 
-        {/* Edit Modal 
+
         {editingProduct && (
-          <EditModal
+          <EditProductModal
             product={editingProduct}
             onSave={(updated) => handleUpdate(editingProduct._id, updated)}
             onCancel={() => setEditingProduct(null)}
           />
 
-        )}*/}
+        )}
 
         {/* Add Modal */}
         {showAddModal && (

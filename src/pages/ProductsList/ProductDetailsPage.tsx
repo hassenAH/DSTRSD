@@ -44,7 +44,7 @@ export default function ProductDetailsPage() {
 
     // price string (adjust currency formatting if needed)
     const priceStr = `${product.price} TND`;
-
+    const id = product._id;
     const categoryName = product.categories && product.categories.length
         ? product.categories[0]
         : "Products";
@@ -60,7 +60,7 @@ export default function ProductDetailsPage() {
             </button>
 
             <ProductInfo
-
+                id={id}
                 category={categoryName}
                 title={product.title}
                 price={priceStr}
