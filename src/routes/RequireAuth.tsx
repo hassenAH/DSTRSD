@@ -1,16 +1,17 @@
 // src/routes/RequireAuth.tsx
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../utils/AuthContext";
-import DashboardPage from "../pages/Dashboard/Dashboard";
 
 export default function RequireAuth() {
     const { isAuthenticated, loading } = useAuth();
     const location = useLocation();
 
-    if (loading) return null; // or a spinner
+    if (loading) return null; // or a loader/spinner
 
     if (!isAuthenticated) {
-        return <Navigate to="/" replace state={{ from: location }} />;
+        // send them to login, and remember where they came from
+        return <Navigate to="/login" replace state={{ from: location }} />;
     }
-    return <DashboardPage />;
+
+    return <Outlet />;
 }

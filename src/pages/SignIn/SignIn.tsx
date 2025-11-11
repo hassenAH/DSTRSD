@@ -1,16 +1,12 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import styles from "./SignIn.module.scss";
 import { useAuth } from "../../utils/AuthContext";
-
 import heroSrc from "../../assets/images/login-hero.webp";
-
-type LocState = { state?: { from?: Location } };
 
 export default function SignInPage() {
   const nav = useNavigate();
-  const { login } = useAuth();
-  const location = useLocation() as LocState;
+  const { login, isAuthenticated } = useAuth();
 
   const emailId = useId();
   const pwdId = useId();
@@ -26,6 +22,12 @@ export default function SignInPage() {
   const [error, setError] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
+  // If already logged in, go straight to dashboard
+  useEffect(() => {
+    if (isAuthenticated) nav("/dashboard", { replace: true });
+  }, [isAuthenticated, nav]);
+
+  // Prefill email if saved
   useEffect(() => {
     const saved = localStorage.getItem("signin.email");
     if (saved) {
@@ -34,6 +36,7 @@ export default function SignInPage() {
     }
   }, []);
 
+  // Focus error message when it appears
   useEffect(() => {
     if (error) errorRef.current?.focus();
   }, [error]);
@@ -43,6 +46,7 @@ export default function SignInPage() {
     const trimmedPass = password.trim();
     const emailOk =
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail) && trimmedEmail.length <= 254;
+
     if (!trimmedEmail || !emailOk) {
       setError("Please enter a valid email address.");
       emailInputRef.current?.focus();
@@ -65,13 +69,24 @@ export default function SignInPage() {
 
     try {
       setSubmitting(true);
+
+      // remember email locally
       if (remember) localStorage.setItem("signin.email", valid.email);
       else localStorage.removeItem("signin.email");
+
+      // call AuthContext login (will throw on error)
       await login({ email: valid.email, password: valid.password, remember });
-      const to = location.state?.from?.pathname ?? "/";
-      nav(to, { replace: true });
-    } catch {
-      setError("Invalid credentials. Please try again.");
+
+      // success → go to dashboard
+      nav("/dashboard", { replace: true });
+    } catch (err: any) {
+      // show server message when available
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Login failed. Please try again.";
+      setError(msg);
     } finally {
       setSubmitting(false);
     }

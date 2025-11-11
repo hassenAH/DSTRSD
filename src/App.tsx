@@ -25,26 +25,28 @@ function AnimatedRoutes() {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route element={<RequireAuth />} />
+        {/* Public */}
         <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
         <Route path="/products" element={<PageWrapper><ProductsPage /></PageWrapper>} />
-        <Route element={<RequireAuth />}></Route>
-        <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
-        <Route path="/orders" element={<OrdersPage />} />
-        <Route path="/dashboard" element={<PageWrapper><DashboardPage /></PageWrapper>} />
-        <Route path="/products" element={<ProductsPage />} />
-        <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
         <Route path="/products/accessories" element={<PageWrapper><AccessoriesPage /></PageWrapper>} />
         <Route path="/products/:slug" element={<PageWrapper><ProductDetailsPage /></PageWrapper>} />
         <Route path="/checkout" element={<PageWrapper><CheckoutPage /></PageWrapper>} />
+        <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
         <Route path="/login" element={<PageWrapper><SignInPage /></PageWrapper>} />
         <Route path="/forgot-password" element={<PageWrapper><ForgotPasswordPage /></PageWrapper>} />
         <Route path="/reset-password" element={<PageWrapper><ResetPasswordPage /></PageWrapper>} />
         <Route path="/verify-otp" element={<PageWrapper><OtpVerifyPage /></PageWrapper>} />
+
+        {/* Protected */}
+        <Route element={<RequireAuth />}>
+          <Route path="/dashboard" element={<PageWrapper><DashboardPage /></PageWrapper>} />
+          <Route path="/orders" element={<PageWrapper><OrdersPage /></PageWrapper>} />
+        </Route>
       </Routes>
     </AnimatePresence>
   );
 }
+
 
 // Fixed PageWrapper - removed the flex centering that was breaking your layout
 function PageWrapper({ children }: { children: React.ReactNode }) {

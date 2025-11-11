@@ -46,14 +46,19 @@
   align-items: center;
   width: 100%;
 
-
+  min-height: clamp(460px, 72vh, 980px);
 
   /* if a plain <img> is ever rendered directly here */
   img {
-    width: 100%;
-    height: auto;
+    max-height: 100%;
     max-width: 100%;
+    width: auto;
+    /* keep aspect ratio */
+    height: auto;
+    /* let max-height control the scale */
     display: block;
+    object-fit: contain;
+
   }
 }
 
@@ -289,4 +294,55 @@
   color: #fafafa;
   font: 500 clamp(14px, 3.5vw, 18px) / 1.4 "Clash Display", sans-serif;
   text-align: center;
+}
+
+.colorSwatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.swatch {
+  --bg: var(--swatch-bg, #e5e7eb);
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 1px solid var(--subtle);
+  cursor: pointer;
+  border-radius: 0;
+  /* sharp to match your system */
+  transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ring);
+  }
+}
+
+.swatchDot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: 0 0 0 1px rgba(9, 9, 9, .12) inset;
+}
+
+/* Better contrast for very light swatches like white */
+.swatch[style*="#FFFFFF"] .swatchDot,
+.swatch[style*="rgb(255, 255, 255)"] .swatchDot {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .25) inset;
+}
+
+.activeSwatch .swatchDot {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }

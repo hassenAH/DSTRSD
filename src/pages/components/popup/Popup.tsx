@@ -114,7 +114,7 @@ const Popup: React.FC<PopupProps> = ({ onClose }) => {
                         <ambientLight intensity={0.9} />
                         <directionalLight position={[2, 3, 4]} intensity={0.9} />
                         <Suspense fallback={null}>
-                            <RotatingModel url="/models/3.glb" scale={1} />
+                            <RotatingModel url="/models/Logo.glb" scale={2} />
                         </Suspense>
                     </Canvas>
                 </div>

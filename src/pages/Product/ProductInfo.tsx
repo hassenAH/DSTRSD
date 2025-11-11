@@ -18,7 +18,29 @@ interface ProductInfoProps {
   colors: ColorVariant[]; // now we get colors with images
   sizes: SizeVariant[];
 }
-
+const NAME_TO_HEX: Record<string, string> = {
+  black: "#000000",
+  white: "#FFFFFF",
+  gray: "#9CA3AF",
+  grey: "#9CA3AF",
+  silver: "#C0C0C0",
+  gold: "#D4AF37",
+  red: "#EF4444",
+  blue: "#3B82F6",
+  green: "#10B981",
+  yellow: "#F59E0B",
+  orange: "#F97316",
+  pink: "#EC4899",
+  purple: "#8B5CF6",
+  brown: "#8B4513",
+  beige: "#F5F5DC",
+  khaki: "#C3B091",
+  navy: "#1F2937",
+  olive: "#6B7280",
+  maroon: "#7F1D1D",
+};
+const colorHex = (name?: string, hex?: string) =>
+  (hex && hex.trim()) || (name ? NAME_TO_HEX[name.toLowerCase()] : "") || "#D1D5DB";
 export default function ProductInfo({
   id,
   colors = [],
@@ -109,22 +131,24 @@ export default function ProductInfo({
           <div className={styles.colorSelector}>
             <label>Color:</label>
             <div className={styles.colorSwatches}>
-              {colors.map((c) => (
-                <button
-                  key={c.name}
-                  aria-pressed={c.name === selectedColor}
-                  className={`${styles.swatch} ${c.name === selectedColor ? styles.activeSwatch : ""}`}
-                  onClick={() => setSelectedColor(c.name)}
-                  title={c.name}
-                >
-                  {/* if you have a tiny color preview image use it, else show text */}
-                  {c.images[0] ? (
-                    <img src={c.images[0]} alt={c.name} className={styles.swatchImg} />
-                  ) : (
-                    <span className={styles.swatchLabel}>{c.name}</span>
-                  )}
-                </button>
-              ))}
+              {colors.map((c) => {
+                const isActive = c.name === selectedColor;
+                const bg = colorHex(c.name, (c as any).hex); // if your ColorVariant has hex
+                return (
+                  <button
+                    key={c.name}
+                    type="button"
+                    aria-pressed={isActive}
+                    aria-label={c.name}
+                    className={`${styles.swatch} ${isActive ? styles.activeSwatch : ""}`}
+                    onClick={() => setSelectedColor(c.name)}
+                    title={c.name}
+                    style={{ ["--swatch-bg" as any]: bg }}
+                  >
+                    <span className={styles.swatchDot} />
+                  </button>
+                );
+              })}
             </div>
           </div>
 

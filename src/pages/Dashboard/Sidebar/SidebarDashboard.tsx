@@ -1,8 +1,15 @@
 import { useNavigate } from "react-router-dom";
 import styles from "../Dashboard.module.scss";
+import { useAuth } from "../../../utils/AuthContext";
 
 export default function DashboardSidebar() {
     const nav = useNavigate();
+    const { logout } = useAuth();
+
+    const handleLogout = () => {
+        logout();            // clears tokens & user in AuthContext
+        nav("/", { replace: true }); // go to home
+    };
 
     return (
         <aside className={styles.sidebar}>
@@ -15,10 +22,7 @@ export default function DashboardSidebar() {
                     <h3>Products</h3>
                     <ul>
                         <li>
-                            <button
-                                className={styles.navItem}
-                                onClick={() => nav("/dashboard")}
-                            >
+                            <button className={styles.navItem} onClick={() => nav("/dashboard")}>
                                 Products
                             </button>
                         </li>
@@ -28,29 +32,22 @@ export default function DashboardSidebar() {
                 <div className={styles.navSection}>
                     <h3>Management</h3>
                     <ul>
+                        <li><button className={styles.navItem}>Analytics</button></li>
+                        <li><button className={styles.navItem}>Customers</button></li>
                         <li>
-                            <button className={styles.navItem}>Analytics</button>
-                        </li>
-                        <li>
-                            <button className={styles.navItem}>Customers</button>
-                        </li>
-                        <li>
-                            <button
-                                className={styles.navItem}
-                                onClick={() => nav("/orders")}
-                            >
+                            <button className={styles.navItem} onClick={() => nav("/orders")}>
                                 Orders
                             </button>
                         </li>
-                        <li>
-                            <button className={styles.navItem}>Settings</button>
-                        </li>
+                        <li><button className={styles.navItem}>Settings</button></li>
                     </ul>
                 </div>
             </nav>
 
             <div className={styles.sidebarFooter}>
-                <button className={styles.logoutBtn}>Logout</button>
+                <button className={styles.logoutBtn} onClick={handleLogout} aria-label="Log out">
+                    Logout
+                </button>
             </div>
         </aside>
     );

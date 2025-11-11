@@ -565,3 +565,97 @@
         }
     }
 }
+
+/* Dashboard.module.scss — extend your existing dashboard styles */
+
+.tableContainer {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 1.5rem;
+    background: var(--panel);
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.table th,
+.table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--subtle);
+}
+
+.table th {
+    background: var(--bg);
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.table tr:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.mono {
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+.empty {
+    padding: 2rem;
+    text-align: center;
+    color: var(--muted);
+}
+
+.status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.delivered {
+    background: #d4edda;
+    color: #155724;
+}
+
+.processing {
+    background: #cce5ff;
+    color: #004085;
+}
+
+/* small action button */
+.smallBtn {
+    appearance: none;
+    border: 1px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    padding: .35rem .55rem;
+    font: 700 .85rem/1 'Clash Display', system-ui, sans-serif;
+    cursor: pointer;
+    border-radius: 0;
+    transition: background-color .15s ease, transform .15s ease;
+
+    &:hover {
+        background: #f3f4f6;
+        transform: translateY(-1px);
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+}

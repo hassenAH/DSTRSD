@@ -3,41 +3,17 @@ import { useEffect, useState } from "react";
 import styles from "./Dashboard.module.scss";
 import api from "../../../utils/axios";
 import DashboardSidebar from "../Sidebar/SidebarDashboard";
-
-type OrderProduct = {
-    productId: string;
-    name?: string;
-    size?: string;
-    color?: string;
-    quantity: number;
-    price?: number;
-};
-
-type Order = {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone?: string;
-    address: string;
-    city: string;
-    state?: string;
-    zip: string;
-    subtotal: number;
-    shipping: number;
-    discount: number;
-    totalAmount: number;
-    paymentMethod: string;
-    deliveryMethod: string;
-    products: OrderProduct[];
-    createdAt: string;
-    status?: string;
-};
+import OrderView, { Order } from "./OrderView";
+// <-- import
 
 export default function OrdersPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // NEW: modal state
+    const [selected, setSelected] = useState<Order | null>(null);
+    const [viewOpen, setViewOpen] = useState(false);
 
     useEffect(() => {
         async function fetchOrders() {
@@ -52,6 +28,18 @@ export default function OrdersPage() {
         }
         fetchOrders();
     }, []);
+
+    const openView = (order: Order) => {
+        setSelected(order);
+        setViewOpen(true);
+    };
+
+    const closeView = () => {
+        setViewOpen(false);
+        setSelected(null);
+    };
+
+    const fmtDT = (n: number) => `${n.toFixed(2)} DT`;
 
     return (
         <div className={styles.dashboardLayout}>
@@ -81,38 +69,64 @@ export default function OrdersPage() {
                                         <th>Delivery</th>
                                         <th>Status</th>
                                         <th>Date</th>
+                                        <th>Actions</th> {/* NEW */}
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {orders.map((order) => (
-                                        <tr key={order._id}>
-                                            <td className={styles.mono}>{order._id.slice(-6)}</td>
-                                            <td>{order.firstName} {order.lastName}</td>
-                                            <td>{order.email}</td>
-                                            <td>{order.subtotal.toFixed(2)} DT</td>
-                                            <td>{order.paymentMethod}</td>
-                                            <td>{order.deliveryMethod}</td>
-                                            <td>
-                                                <span
-                                                    className={`${styles.status} ${order.status === "delivered"
-                                                        ? styles.delivered
-                                                        : order.status === "pending"
-                                                            ? styles.pending
-                                                            : styles.processing
-                                                        }`}
-                                                >
-                                                    {order.status || "processing"}
-                                                </span>
-                                            </td>
-                                            <td>{new Date(order.createdAt).toLocaleDateString()}</td>
-                                        </tr>
-                                    ))}
+                                    {orders.map((order) => {
+                                        const status = (order.status || "processing").toLowerCase();
+                                        return (
+                                            <tr key={order._id}>
+                                                <td className={styles.mono}>{order._id.slice(-6)}</td>
+                                                <td>{order.firstName} {order.lastName}</td>
+                                                <td>{order.email}</td>
+                                                <td>{fmtDT(order.subtotal)}</td>
+                                                <td>{order.paymentMethod}</td>
+                                                <td>{order.deliveryMethod}</td>
+                                                <td>
+                                                    <span
+                                                        className={`${styles.status} ${status.includes("deliver")
+                                                            ? styles.delivered
+                                                            : status.includes("pend")
+                                                                ? styles.pending
+                                                                : styles.processing
+                                                            }`}
+                                                    >
+                                                        {order.status || "processing"}
+                                                    </span>
+                                                </td>
+                                                <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                                                <td>
+                                                    <button
+                                                        type="button"
+                                                        className={styles.smallBtn}
+                                                        onClick={() => openView(order)}
+                                                        title="View order"
+                                                    >
+                                                        View
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         )}
                     </div>
                 )}
             </div>
+
+            {/* Modal */}
+            <OrderView
+                open={viewOpen}
+                order={selected}
+                onClose={closeView}
+                onOpenProduct={(id) => {
+                    // go to your product page route if you have one
+                    // e.g., navigate(`/product/${id}`)
+                    console.log("Open product", id);
+                }}
+            />
         </div>
     );
 }
