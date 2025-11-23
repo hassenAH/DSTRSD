@@ -97,8 +97,8 @@ export default function ProductInfo({
       <div className={styles.productLayout}>
         <div className={styles.leftColumn}>
           <ProductImage
-            src={imagesForColor[0] ?? ""}
-            hoverSrc={imagesForColor[1] ?? ""}
+            images={imagesForColor}
+
             alt={title}
 
           />
