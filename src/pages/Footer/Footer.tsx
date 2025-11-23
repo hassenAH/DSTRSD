@@ -1,27 +1,45 @@
-
 import * as React from "react";
 import styles from "./Footer.module.scss";
 import EmailInput from "./EmailInput";
 import SignUpButton from "./SignUpButton";
+import { useSubscribers } from "../../utils/SubscriberContext"; // ⬅️ adjust path if needed
+import { toast } from "react-hot-toast";
 
 export default function Footer() {
   const [email, setEmail] = React.useState("");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const { subscribe } = useSubscribers(); // ⬅️ use context action
 
   const handleEmailChange = (value: string) => setEmail(value);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email.trim()) {
-      console.log("Footer signup:", email);
+  const submitEmail = async () => {
+    const trimmed = email.trim();
+    if (!trimmed || isSubmitting) return;
+
+    try {
+      setIsSubmitting(true);
+      await subscribe(trimmed); // POST /subscribe + refresh list
+      toast.success("You’re in. Check your inbox soon.");
       setEmail("");
+    } catch (err: any) {
+      console.error(err);
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to subscribe. Please try again.";
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void submitEmail();
+  };
+
   const handleSignUpClick = () => {
-    if (email.trim()) {
-      console.log("Footer signup:", email);
-      setEmail("");
-    }
+    void submitEmail();
   };
 
   return (
@@ -38,7 +56,9 @@ export default function Footer() {
             <SignUpButton
               onClick={handleSignUpClick}
               disabled={!email.trim()}
+              loading={isSubmitting}
             />
+
           </form>
         </div>
       </footer>

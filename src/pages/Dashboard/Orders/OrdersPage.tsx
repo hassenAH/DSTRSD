@@ -80,7 +80,7 @@ export default function OrdersPage() {
                                                 <td className={styles.mono}>{order._id.slice(-6)}</td>
                                                 <td>{order.firstName} {order.lastName}</td>
                                                 <td>{order.email}</td>
-                                                <td>{fmtDT(order.subtotal)}</td>
+                                                <td>{fmtDT(order.totalAmount)}</td>
                                                 <td>{order.paymentMethod}</td>
                                                 <td>{order.deliveryMethod}</td>
                                                 <td>

@@ -33,7 +33,11 @@ export default function DashboardSidebar() {
                     <h3>Management</h3>
                     <ul>
                         <li><button className={styles.navItem}>Analytics</button></li>
-                        <li><button className={styles.navItem}>Customers</button></li>
+                        <li>
+                            <button className={styles.navItem} onClick={() => nav("/sub")}>
+                                Subscribers
+                            </button>
+                        </li>
                         <li>
                             <button className={styles.navItem} onClick={() => nav("/orders")}>
                                 Orders

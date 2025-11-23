@@ -216,6 +216,10 @@ export default function OrderView({ open, order, onClose, onOpenProduct }: Props
                                     <span>Subtotal</span>
                                     <span>{fmtDT(order.subtotal)}</span>
                                 </div>
+                                <div className={styles.trow}>
+                                    <span>Shipping</span>
+                                    <span>{fmtDT(order.shipping)}</span>
+                                </div>
 
                                 {order.discount > 0 && (
                                     <div className={styles.trow}>
@@ -225,7 +229,7 @@ export default function OrderView({ open, order, onClose, onOpenProduct }: Props
                                 )}
                                 <div className={`${styles.trow} ${styles.grand}`}>
                                     <span>Total</span>
-                                    <span>{fmtDT(order.subtotal)}</span>
+                                    <span>{fmtDT(order.totalAmount)}</span>
                                 </div>
                             </div>
                         </div>

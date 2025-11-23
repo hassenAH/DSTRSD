@@ -1,9 +1,14 @@
+// src/components/Popup.tsx (or whatever path)
+// adjust imports according to your structure
 
-import React, { useEffect, useRef, Suspense, useMemo } from "react";
+import React, { useEffect, useRef, Suspense, useMemo, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
+import { toast } from "react-hot-toast";
+// ⚠️ adjust path
 import "./Popup.scss";
+import { useSubscribers } from "../../../utils/SubscriberContext";
 
 type PopupProps = {
     onClose?: () => void;
@@ -22,10 +27,12 @@ function RotatingModel({ url, scale = 1 }: { url: string; scale?: number }) {
         </group>
     );
 }
-useGLTF.preload("/models/3.glb");
+useGLTF.preload("/models/logo.glb");
 
 const Popup: React.FC<PopupProps> = ({ onClose }) => {
     const dialogRef = useRef<HTMLDialogElement | null>(null);
+    const { subscribe } = useSubscribers(); // ✅ use context
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (dialogRef.current && !dialogRef.current.open) {
@@ -50,14 +57,35 @@ const Popup: React.FC<PopupProps> = ({ onClose }) => {
         "Exclusive content",
         "Special offers",
         "Personal invitation",
-
     ];
 
-    const handleEmailSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleEmailSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (isSubmitting) return;
+
         const formData = new FormData(e.currentTarget);
-        const email = formData.get("email") as string;
-        console.log("Email submitted:", email);
+        const email = String(formData.get("email") || "").trim();
+        if (!email) return;
+
+        try {
+            setIsSubmitting(true);
+            // 🔥 call backend via context
+            await subscribe(email);
+            handleClose();
+            // success → toast + close
+            toast.success("You’re in. Check your inbox soon.");
+
+
+        } catch (err: any) {
+            console.error(err);
+            const message =
+                err?.response?.data?.message ||
+                err?.message ||
+                "Failed to subscribe. Please try again.";
+            toast.error(message);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -93,7 +121,9 @@ const Popup: React.FC<PopupProps> = ({ onClose }) => {
                             placeholder="Enter your email address"
                             required
                         />
-                        <button type="submit">Join</button>
+                        <button type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? "Joining..." : "Join"}
+                        </button>
                         <small className="popup__disclaimer">
                             By signing up, you agree to receive marketing messages via email.
                         </small>

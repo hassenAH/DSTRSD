@@ -18,6 +18,8 @@ import { ProductProvider } from "./utils/ProductContext";
 import DashboardPage from "./pages/Dashboard/Dashboard";
 import { CategoryProvider } from "./utils/CategoryContext";
 import OrdersPage from "./pages/Dashboard/Orders/OrdersPage";
+import { SubscriberProvider } from "./utils/SubscriberContext";
+import SubscribersPage from "./pages/Dashboard/Subscribers/SubscribersPage";
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -40,6 +42,8 @@ function AnimatedRoutes() {
         {/* Protected */}
         <Route element={<RequireAuth />}>
           <Route path="/dashboard" element={<PageWrapper><DashboardPage /></PageWrapper>} />
+          <Route path="/sub" element={<PageWrapper><SubscribersPage /></PageWrapper>} />
+
           <Route path="/orders" element={<PageWrapper><OrdersPage /></PageWrapper>} />
         </Route>
       </Routes>
@@ -64,7 +68,7 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
 
 function AppContent() {
   const location = useLocation();
-  const hideNavbar = location.pathname === '/dashboard' || location.pathname === '/orders';
+  const hideNavbar = location.pathname === '/dashboard' || location.pathname === '/orders' || location.pathname === '/sub';
 
   return (
     <>
@@ -76,16 +80,20 @@ function AppContent() {
 
 export default function App() {
   return (
-    <CategoryProvider>
-      <ProductProvider>
-        <CartProvider>
-          <Router>
-            <StartupPopup />
+    <SubscriberProvider>
 
-            <AppContent />
-          </Router>
-        </CartProvider>
-      </ProductProvider>
-    </CategoryProvider>
+
+      <CategoryProvider>
+        <ProductProvider>
+          <CartProvider>
+            <Router>
+              <StartupPopup />
+
+              <AppContent />
+            </Router>
+          </CartProvider>
+        </ProductProvider>
+      </CategoryProvider>
+    </SubscriberProvider>
   );
 }

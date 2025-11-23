@@ -122,11 +122,11 @@ export async function downloadInvoice(order: Order) {
         {/* TOTALS */}
         <View style={styles.totals}>
           <View style={styles.trow}><Text>Subtotal</Text><Text>{fmt(order.subtotal)}</Text></View>
-
+          <View style={styles.trow}><Text>Shipping</Text><Text>{fmt(order.shipping)}</Text></View>
           {order.discount > 0 && (
             <View style={styles.trow}><Text>Discount</Text><Text>- {fmt(order.discount)}</Text></View>
           )}
-          <View style={[styles.trow, styles.grand]}><Text>Total</Text><Text>{fmt(order.subtotal)}</Text></View>
+          <View style={[styles.trow, styles.grand]}><Text>Total</Text><Text>{fmt(order.totalAmount)}</Text></View>
         </View>
 
         <View style={styles.footer}><Text>Thank you for your order — keep it raw.</Text></View>

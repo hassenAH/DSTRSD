@@ -27,7 +27,7 @@ const objectIdTime = (id: string) => {
 
 export default function ProductsPage() {
     const { addToCart } = useCart();
-    const { products = [], loading, error, fetchAllProducts } = useProducts();
+    const { products, loading, error } = useProducts();
     const { categories } = useCategories();
     const [activeFilter, setActiveFilter] = useState<FilterType>("FEATURED");
     const [activeCategory, setActiveCategory] = useState<string>("All");
@@ -35,11 +35,6 @@ export default function ProductsPage() {
     const [activeSize, setActiveSize] = useState<SizeType | null>(null);
 
     // Load from API on mount (if provider didn't already)
-    useEffect(() => {
-        if (!products || products.length === 0) {
-            fetchAllProducts().catch(() => { });
-        }
-    }, [fetchAllProducts, products?.length]);
 
 
     const categorie = ["All", "Men", "Women", "Accessories"];

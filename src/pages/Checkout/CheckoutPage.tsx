@@ -63,12 +63,12 @@ export default function CheckoutPage() {
         const code = promo.trim().toUpperCase();
         if (!code) return 0;
         if (code === "WELCOME10") return Math.min(subtotal * 0.1, 25);
-        if (code === "FREESHIP") return shipping;
+
         return 0;
-    }, [promo, subtotal, shipping]);
+    }, [promo, subtotal]);
 
     // total
-    const totalAmount = useMemo(() => subtotal + shipping - discount, [subtotal, shipping, discount]);
+    const totalAmount = useMemo(() => subtotal - discount + shipping, [subtotal, discount]);
 
     const fmt = (n: number) => `${n.toFixed(2)}DT`;
 
@@ -183,11 +183,11 @@ export default function CheckoutPage() {
 
                         <div className={styles.grid3}>
                             <label className={styles.field}>
-                                <span>State / Province</span>
+                                <span>City *</span>
                                 <input value={stateProv} onChange={(e) => setStateProv(e.target.value)} />
                             </label>
                             <label className={styles.field}>
-                                <span>City *</span>
+                                <span>State / Province</span>
                                 <select required value={city} onChange={(e) => setCity(e.target.value)}>
                                     {cities.map((c) => (
                                         <option key={c} value={c}>
@@ -354,6 +354,7 @@ export default function CheckoutPage() {
                                 <span>Shipping</span>
                                 <span>{fmt(shipping)}</span>
                             </div>
+
                             {discount > 0 && (
                                 <div className={styles.trow}>
                                     <span>Discount</span>

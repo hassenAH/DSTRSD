@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom"; // ✅ add navigation
 import styles from "./Cart.module.scss";
+import { useCart } from "../../utils/CartContext";
 
 export type CartItem = {
     id: string | number;
@@ -26,24 +27,24 @@ type CartProps = {
 
 export default function Cart({
     isOpen,
-    items,
+
     currency = "DT",
     shipping = 0,
     onClose,
     onCheckout,
     onUpdateQty,
-    onRemove,
+
 }: CartProps) {
     const panelRef = useRef<HTMLDivElement>(null);
     const prevActiveRef = useRef<HTMLElement | null>(null);
     const navigate = useNavigate(); // ✅
-
+    const { items, subtotal, updateQty, removeFromCart, clearCart } = useCart();
     // Totals
-    const { subtotal, total } = useMemo(() => {
-        const subtotal = items.reduce((s, it) => s + it.price * it.qty, 0);
-        const total = Math.round((subtotal + shipping) * 100) / 100;
+    const { total } = useMemo(() => {
+        const subtotal = items.reduce((s, it) => s + it.price * it.qty, 0) + shipping;
+        const total = Math.round(subtotal * 100) / 100;
         return { subtotal, total };
-    }, [items, shipping]);
+    }, [items]);
 
     // Open/close side effects: focus + ESC + scroll lock
     useEffect(() => {
@@ -145,7 +146,7 @@ export default function Cart({
                                                     value={item.qty}
                                                     onChange={(e) => {
                                                         const v = Math.max(1, parseInt(e.target.value || "1", 10));
-                                                        onUpdateQty(item.id, v);
+                                                        updateQty(item);
                                                     }}
                                                 />
                                                 <button
@@ -161,7 +162,7 @@ export default function Cart({
 
                                         <button
                                             className={styles.remove}
-                                            onClick={() => onRemove(item.id)}
+                                            onClick={() => removeFromCart(item)}
                                             aria-label={`Remove ${item.name} from cart`}
                                         >
                                             Remove

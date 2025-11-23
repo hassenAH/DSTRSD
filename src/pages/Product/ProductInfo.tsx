@@ -100,10 +100,9 @@ export default function ProductInfo({
             src={imagesForColor[0] ?? ""}
             hoverSrc={imagesForColor[1] ?? ""}
             alt={title}
-            showNew
-            showOnlineExclusive
+
           />
-          {/* Could add a small gallery/thumbnail list */}
+
         </div>
 
         <div className={styles.rightColumn}>
@@ -188,8 +187,8 @@ export default function ProductInfo({
               <span className={styles.buyButtonText}>Buy now</span>
             </button>
           </div>
+          {/*   <DeliveryInfo /> */}
 
-          <DeliveryInfo />
         </div>
       </div>
     </section>
