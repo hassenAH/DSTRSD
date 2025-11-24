@@ -56,7 +56,7 @@ export default function CheckoutPage() {
     }
 
     // fees
-    const shipping = useMemo(() => (delivery === "express" ? 15 : 5), [delivery]);
+    const shipping = useMemo(() => (delivery === "express" ? 15 : 8), [delivery]);
 
     // promo
     const discount = useMemo(() => {

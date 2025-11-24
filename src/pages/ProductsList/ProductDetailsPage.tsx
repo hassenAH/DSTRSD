@@ -43,7 +43,7 @@ export default function ProductDetailsPage() {
     const images = firstColorWithImages?.images ?? ["/placeholder.png"];
 
     // price string (adjust currency formatting if needed)
-    const priceStr = `${product.price} TND`;
+    const priceStr = `${product.price}`;
     const id = product._id;
     const categoryName = product.categories && product.categories.length
         ? product.categories[0]

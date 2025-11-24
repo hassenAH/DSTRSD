@@ -1,4 +1,6 @@
 // components/EditProductModal.tsx
+"use client";
+
 import React, {
     useEffect,
     useMemo,
@@ -28,17 +30,25 @@ type ColorRow = {
     hex?: string;
     files: File[];
     previews: string[];
+    existing: string[];          // existing images from backend
+    removedExisting: string[];   // ones the user deleted
     coverIndex: number | null;
 };
 
-export default function EditProductModal({ product, onSave, onCancel }: EditModalProps) {
+export default function EditProductModal({
+    product,
+    onSave,
+    onCancel,
+}: EditModalProps) {
     const { updateProductMultipart, loading, error } = useProducts();
 
     // ---- Scalars ----
     const [title, setTitle] = useState(product.title);
     const [price, setPrice] = useState(String(product.price));
     const [categoryIds, setCategoryIds] = useState<string[]>(
-        (product as any).categories?.map((c: any) => (typeof c === "string" ? c : c?._id || c)) || []
+        (product as any).categories?.map((c: any) =>
+            typeof c === "string" ? c : c?._id || c
+        ) || []
     );
 
     // ---- Sizes ----
@@ -57,10 +67,12 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
         product.description?.detailsTitle || "Product Details"
     );
     const [details, setDetails] = useState<string[]>(
-        product.description?.details?.length ? product.description.details : [""]
+        product.description?.details?.length
+            ? product.description.details
+            : [""]
     );
 
-    // ---- Colors (rows + existing images map) ----
+    // ---- Colors (rows with existing + new images) ----
     const [colorRows, setColorRows] = useState<ColorRow[]>(
         () =>
             (product.colors || []).map((cv: any) => ({
@@ -69,26 +81,18 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
                 hex: "#000000",
                 files: [],
                 previews: [],
+                existing: Array.isArray(cv?.images) ? cv.images : [],
+                removedExisting: [],
                 coverIndex: null,
             }))
     );
-
-    const [existingColorImages, setExistingColorImages] = useState<Record<string, string[]>>(
-        () =>
-            (product.colors || []).reduce((acc: Record<string, string[]>, cv: any) => {
-                const name = cv?.name || String(cv || "");
-                acc[name] = Array.isArray(cv?.images) ? cv.images : [];
-                return acc;
-            }, {})
-    );
-
-    const [removeImages, setRemoveImages] = useState<Record<string, string[]>>({});
 
     // Track created object URLs for safe cleanup
     const createdUrlsRef = useRef<string[]>([]);
     useEffect(() => {
         return () => {
-            [...createdUrlsRef.current, ...colorRows.flatMap((r) => r.previews)].forEach((u) => {
+            // Revoke all created URLs
+            createdUrlsRef.current.forEach((u) => {
                 try {
                     URL.revokeObjectURL(u);
                 } catch { }
@@ -109,38 +113,39 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
             return next;
         });
     };
+
     const setSizeStock = (size: string, stock: number) =>
-        setSizesSelected((prev) => ({ ...prev, [size]: Math.max(0, Math.floor(stock || 0)) }));
+        setSizesSelected((prev) => ({
+            ...prev,
+            [size]: Math.max(0, Math.floor(stock || 0)),
+        }));
 
     // ---- Colors helpers ----
     const addColorRow = () =>
         setColorRows((prev) => [
             ...prev,
-            { id: crypto.randomUUID(), name: "", hex: "#000000", files: [], previews: [], coverIndex: null },
+            {
+                id: crypto.randomUUID(),
+                name: "",
+                hex: "#000000",
+                files: [],
+                previews: [],
+                existing: [],
+                removedExisting: [],
+                coverIndex: null,
+            },
         ]);
 
     const removeColorRow = (id: string) => {
         setColorRows((prev) => {
             const row = prev.find((r) => r.id === id);
+            // cleanup previews for this row
             row?.previews.forEach((u) => {
-                try { URL.revokeObjectURL(u); } catch { }
+                try {
+                    URL.revokeObjectURL(u);
+                } catch { }
             });
-            const next = prev.filter((r) => r.id !== id);
-            // Also drop any existing bucket for this name
-            const name = row?.name?.trim();
-            if (name) {
-                setExistingColorImages((m) => {
-                    const copy = { ...m };
-                    delete copy[name];
-                    return copy;
-                });
-                setRemoveImages((m) => {
-                    const copy = { ...m };
-                    delete copy[name];
-                    return copy;
-                });
-            }
-            return next;
+            return prev.filter((r) => r.id !== id);
         });
     };
 
@@ -157,32 +162,18 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
         });
     };
 
-    // When renaming a color, also move its existing-images bucket and removeImages bucket
+    // When renaming a color
     const updateColorName = (id: string, name: string) => {
         name = name.trim();
-        setColorRows((prev) => prev.map((r) => (r.id === id ? { ...r, name } : r)));
-        setExistingColorImages((prev) => {
-            const oldName = colorRows.find((r) => r.id === id)?.name || "";
-            if (!oldName || oldName === name) return prev;
-            const copy = { ...prev };
-            if (copy[oldName] && !copy[name]) {
-                copy[name] = copy[oldName];
-                delete copy[oldName];
-            }
-            setRemoveImages((rem) => {
-                const rcopy = { ...rem } as Record<string, string[]>;
-                if (rcopy[oldName] && !rcopy[name]) {
-                    rcopy[name] = rcopy[oldName];
-                    delete rcopy[oldName];
-                }
-                return rcopy;
-            });
-            return copy;
-        });
+        setColorRows((prev) =>
+            prev.map((r) => (r.id === id ? { ...r, name } : r))
+        );
     };
 
     const updateColorHex = (id: string, hex: string) => {
-        setColorRows((prev) => prev.map((r) => (r.id === id ? { ...r, hex } : r)));
+        setColorRows((prev) =>
+            prev.map((r) => (r.id === id ? { ...r, hex } : r))
+        );
     };
 
     const handleColorFilesSelect = (id: string, e: ChangeEvent<HTMLInputElement>) => {
@@ -199,7 +190,8 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
                         return url;
                     })
                 );
-                const coverIndex = r.coverIndex == null && files.length > 0 ? 0 : r.coverIndex;
+                const coverIndex =
+                    r.coverIndex == null && files.length > 0 ? 0 : r.coverIndex;
                 return { ...r, files, previews, coverIndex };
             })
         );
@@ -207,7 +199,9 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
     };
 
     const setCover = (id: string, idx: number) => {
-        setColorRows((prev) => prev.map((r) => (r.id === id ? { ...r, coverIndex: idx } : r)));
+        setColorRows((prev) =>
+            prev.map((r) => (r.id === id ? { ...r, coverIndex: idx } : r))
+        );
     };
 
     const removeColorFile = (id: string, idx: number) => {
@@ -218,8 +212,12 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
                 const previews = r.previews.slice();
                 const url = previews[idx];
                 if (url) {
-                    try { URL.revokeObjectURL(url); } catch { }
-                    createdUrlsRef.current = createdUrlsRef.current.filter((u) => u !== url);
+                    try {
+                        URL.revokeObjectURL(url);
+                    } catch { }
+                    createdUrlsRef.current = createdUrlsRef.current.filter(
+                        (u) => u !== url
+                    );
                 }
                 files.splice(idx, 1);
                 previews.splice(idx, 1);
@@ -233,17 +231,17 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
         );
     };
 
-    const removeExistingColorImage = (colorName: string, url: string) => {
-        setExistingColorImages((prev) => {
-            const next = { ...prev } as Record<string, string[]>;
-            next[colorName] = (next[colorName] || []).filter((x) => x !== url);
-            return next;
-        });
-        setRemoveImages((prev) => {
-            const next = { ...prev } as Record<string, string[]>;
-            next[colorName] = Array.from(new Set([...(next[colorName] || []), url]));
-            return next;
-        });
+    const removeExistingColorImage = (id: string, url: string) => {
+        setColorRows((prev) =>
+            prev.map((r) => {
+                if (r.id !== id) return r;
+                return {
+                    ...r,
+                    existing: r.existing.filter((x) => x !== url),
+                    removedExisting: [...r.removedExisting, url],
+                };
+            })
+        );
     };
 
     // ---- Description helpers ----
@@ -275,7 +273,8 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
     const validate = () => {
         if (!title.trim()) return "Title is required.";
         const n = Number(price);
-        if (price.trim() === "" || Number.isNaN(n) || n < 0) return "Valid non-negative price is required.";
+        if (price.trim() === "" || Number.isNaN(n) || n < 0)
+            return "Valid non-negative price is required.";
         if (!intro.trim()) return "Intro description is required.";
         if (!categoryIds.length) return "Select at least one category.";
         if (!colorsForBackend.length) return "Add at least one color.";
@@ -290,19 +289,35 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
         const v = validate();
         if (v) return alert(v);
 
-        const sizesPayload = Object.entries(sizesSelected).map(([name, stock]) => ({ name, stock }));
+        const sizesPayload = Object.entries(sizesSelected).map(
+            ([name, stock]) => ({ name, stock })
+        );
 
-        // Build colorFiles from rows (keyed by color name), cover-first ordering
+        // Build colorFiles and removeImages from rows (keyed by color name)
         const colorFiles: Record<string, File[]> = {};
+        const removeImages: Record<string, string[]> = {};
+
         colorRows.forEach((row) => {
             const name = row.name.trim();
-            if (!name || row.files.length === 0) return;
-            let ordered = row.files.slice();
-            if (row.coverIndex != null && row.files[row.coverIndex]) {
-                const cover = row.files[row.coverIndex];
-                ordered = [cover, ...row.files.filter((_, i) => i !== row.coverIndex)];
+            if (!name) return;
+
+            // new files
+            if (row.files.length > 0) {
+                let ordered = row.files.slice();
+                if (row.coverIndex != null && row.files[row.coverIndex]) {
+                    const cover = row.files[row.coverIndex];
+                    ordered = [
+                        cover,
+                        ...row.files.filter((_, i) => i !== row.coverIndex),
+                    ];
+                }
+                colorFiles[name] = ordered;
             }
-            colorFiles[name] = ordered;
+
+            // existing images to delete
+            if (row.removedExisting.length > 0) {
+                removeImages[name] = row.removedExisting;
+            }
         });
 
         const payload: UpdateProductMultipart = {
@@ -324,7 +339,6 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
             if (onSave) await onSave(payload);
             else await updateProductMultipart(product._id, payload);
         } catch (err) {
-            // Parent/context will usually surface error; keep UI responsive
             console.error(err);
         }
     };
@@ -337,7 +351,11 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
                 {error && <div className={styles.error}>{String(error)}</div>}
 
                 <label>Title</label>
-                <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Product title" />
+                <input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Product title"
+                />
 
                 <div className={styles.grid2}>
                     <div>
@@ -354,14 +372,21 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
 
                     <div>
                         <label>Categories</label>
-                        <CategorySelect multiple value={categoryIds} onChange={setCategoryIds} />
+                        <CategorySelect
+                            multiple
+                            value={categoryIds}
+                            onChange={setCategoryIds}
+                        />
                     </div>
                 </div>
 
                 <label>Sizes (enable and set stock)</label>
                 <div className={styles.sizesGrid}>
                     {AVAILABLE_SIZES.map((size) => {
-                        const enabled = Object.prototype.hasOwnProperty.call(sizesSelected, size);
+                        const enabled = Object.prototype.hasOwnProperty.call(
+                            sizesSelected,
+                            size
+                        );
                         return (
                             <div className={styles.sizeRow} key={size}>
                                 <label className={styles.checkbox}>
@@ -377,7 +402,9 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
                                     type="number"
                                     min={0}
                                     value={enabled ? String(sizesSelected[size]) : ""}
-                                    onChange={(e) => setSizeStock(size, Number(e.target.value))}
+                                    onChange={(e) =>
+                                        setSizeStock(size, Number(e.target.value))
+                                    }
                                     placeholder="stock"
                                     disabled={!enabled}
                                 />
@@ -390,126 +417,286 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
                 <div className={styles.hr} />
                 <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
                     <h3 style={{ margin: 0 }}>Colors</h3>
-                    <button type="button" className={styles.addDetailBtn} onClick={addColorRow}>
+                    <button
+                        type="button"
+                        className={styles.addDetailBtn}
+                        onClick={addColorRow}
+                    >
                         + Add Color
                     </button>
                 </div>
                 {!colorRows.length && (
-                    <p className={styles.hint}>Add at least one color, then upload images per color.</p>
+                    <p className={styles.hint}>
+                        Add at least one color, then upload images per color.
+                    </p>
                 )}
 
                 <div style={{ display: "grid", gap: 16 }}>
-                    {colorRows.map((row, idx) => {
-                        const existing = existingColorImages[row.name] || [];
-                        return (
-                            <section
-                                key={row.id}
-                                className={styles.colorSection}
-                                aria-label={`Color ${row.name || idx + 1}`}
-                                style={{ border: "1px dashed var(--border,#4444)", borderRadius: 12, padding: 12 }}
+                    {colorRows.map((row, idx) => (
+                        <section
+                            key={row.id}
+                            className={styles.colorSection}
+                            aria-label={`Color ${row.name || idx + 1}`}
+                            style={{
+                                border: "1px dashed var(--border,#4444)",
+                                borderRadius: 12,
+                                padding: 12,
+                            }}
+                        >
+                            <header
+                                className={styles.colorHeader}
+                                style={{
+                                    display: "flex",
+                                    gap: 12,
+                                    alignItems: "center",
+                                }}
                             >
-                                <header className={styles.colorHeader} style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                                    <input
-                                        type="text"
-                                        value={row.name}
-                                        onChange={(e) => updateColorName(row.id, e.target.value)}
-                                        placeholder="Color name (e.g., Black)"
-                                        aria-label="Color name"
-                                        style={{ flex: 1 }}
-                                    />
-                                    <input
-                                        type="color"
-                                        value={row.hex || "#000000"}
-                                        onChange={(e) => updateColorHex(row.id, e.target.value)}
-                                        aria-label="Color swatch"
-                                        title="Swatch (optional)"
-                                        style={{ width: 40, height: 36, padding: 0, border: "none", cursor: "pointer" }}
-                                    />
-                                    <div style={{ marginLeft: "auto", display: "inline-flex", gap: 6 }}>
-                                        <button
-                                            type="button"
-                                            className={styles.iconBtn}
-                                            onClick={() => moveColorRow(row.id, -1)}
-                                            disabled={idx === 0}
-                                            title="Move up"
-                                            aria-label="Move up"
-                                        >
-                                            ↑
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className={styles.iconBtn}
-                                            onClick={() => moveColorRow(row.id, +1)}
-                                            disabled={idx === colorRows.length - 1}
-                                            title="Move down"
-                                            aria-label="Move down"
-                                        >
-                                            ↓
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className={styles.iconBtn}
-                                            onClick={() => removeColorRow(row.id)}
-                                            title="Remove color"
-                                            aria-label="Remove color"
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                </header>
-
-                                {/* Existing images */}
-                                {existing.length > 0 && (
-                                    <div
-                                        className={styles.gallerySmall}
-                                        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12, marginTop: 12 }}
+                                <input
+                                    type="text"
+                                    value={row.name}
+                                    onChange={(e) =>
+                                        updateColorName(row.id, e.target.value)
+                                    }
+                                    placeholder="Color name (e.g., Black)"
+                                    aria-label="Color name"
+                                    style={{ flex: 1 }}
+                                />
+                                <input
+                                    type="color"
+                                    value={row.hex || "#000000"}
+                                    onChange={(e) => updateColorHex(row.id, e.target.value)}
+                                    aria-label="Color swatch"
+                                    title="Swatch (optional)"
+                                    style={{
+                                        width: 40,
+                                        height: 36,
+                                        padding: 0,
+                                        border: "none",
+                                        cursor: "pointer",
+                                    }}
+                                />
+                                <div
+                                    style={{
+                                        marginLeft: "auto",
+                                        display: "inline-flex",
+                                        gap: 6,
+                                    }}
+                                >
+                                    <button
+                                        type="button"
+                                        className={styles.iconBtn}
+                                        onClick={() => moveColorRow(row.id, -1)}
+                                        disabled={idx === 0}
+                                        title="Move up"
+                                        aria-label="Move up"
                                     >
-                                        {existing.map((url) => (
-                                            <article key={url} className={styles.tileSmall} style={{ position: "relative" }}>
-                                                <img className={styles.thumb} src={url} alt={`${row.name}-img`} style={{ width: "100%", height: 120, objectFit: "cover" }} />
-                                                <div className={styles.actions} style={{ position: "absolute", inset: 8, display: "flex", justifyContent: "flex-end" }}>
-                                                    <button type="button" onClick={() => removeExistingColorImage(row.name, url)} title="Remove">🗑️</button>
-                                                </div>
-                                                <div className={styles.meta} style={{ display: "flex", justifyContent: "space-between", padding: "6px 8px", fontSize: 12 }}>
-                                                    <span className={styles.name}>Existing</span>
-                                                    <span className={styles.size}>—</span>
-                                                </div>
-                                            </article>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Upload new ones */}
-                                <label className={styles.dropzoneSmall} style={{ display: "grid", placeItems: "center", padding: 16, border: "1px solid var(--border,#4444)", borderRadius: 12, marginTop: 8 }}>
-                                    <input type="file" accept="image/*" multiple onChange={(e) => handleColorFilesSelect(row.id, e)} />
-                                    <div className={styles.dzTextSmall}>Click to choose images</div>
-                                </label>
-
-                                <div className={styles.gallerySmall} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12, marginTop: 12 }}>
-                                    {row.previews.map((src, i) => {
-                                        const isCover = row.coverIndex === i;
-                                        return (
-                                            <article key={src} className={styles.tileSmall} style={{ position: "relative", border: `2px solid ${isCover ? "var(--accent,#2563eb)" : "transparent"}`, borderRadius: 12, overflow: "hidden", outline: "1px solid var(--border,#4444)" }}>
-                                                <img className={styles.thumb} src={src} alt={`${row.name}-preview-${i}`} style={{ width: "100%", height: 120, objectFit: "cover" }} />
-                                                <div className={styles.actions} style={{ position: "absolute", inset: 8, display: "flex", justifyContent: "space-between", gap: 6 }}>
-                                                    <button type="button" onClick={() => setCover(row.id, i)} title="Set cover" style={{ padding: "4px 8px", borderRadius: 999, border: "none", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 12 }}>
-                                                        {isCover ? "Cover ✓" : "Set cover"}
-                                                    </button>
-                                                    <button type="button" onClick={() => removeColorFile(row.id, i)} title="Remove" style={{ padding: "4px 8px", borderRadius: 999, border: "none", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 12 }}>
-                                                        Remove
-                                                    </button>
-                                                </div>
-                                                <div className={styles.meta} style={{ display: "flex", justifyContent: "space-between", padding: "6px 8px", fontSize: 12 }}>
-                                                    <span className={styles.name}>{product.title}</span>
-                                                    <span className={styles.size}>{formatBytes(row.files[i]?.size || 0)}</span>
-                                                </div>
-                                            </article>
-                                        );
-                                    })}
+                                        ↑
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={styles.iconBtn}
+                                        onClick={() => moveColorRow(row.id, +1)}
+                                        disabled={idx === colorRows.length - 1}
+                                        title="Move down"
+                                        aria-label="Move down"
+                                    >
+                                        ↓
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={styles.iconBtn}
+                                        onClick={() => removeColorRow(row.id)}
+                                        title="Remove color"
+                                        aria-label="Remove color"
+                                    >
+                                        ✕
+                                    </button>
                                 </div>
-                            </section>
-                        );
-                    })}
+                            </header>
+
+                            {/* Existing images */}
+                            {row.existing.length > 0 && (
+                                <div
+                                    className={styles.gallerySmall}
+                                    style={{
+                                        display: "grid",
+                                        gridTemplateColumns:
+                                            "repeat(auto-fill, minmax(140px, 1fr))",
+                                        gap: 12,
+                                        marginTop: 12,
+                                    }}
+                                >
+                                    {row.existing.map((url) => (
+                                        <article
+                                            key={url}
+                                            className={styles.tileSmall}
+                                            style={{ position: "relative" }}
+                                        >
+                                            <img
+                                                className={styles.thumb}
+                                                src={url}
+                                                alt={`${row.name}-img`}
+                                                style={{
+                                                    width: "100%",
+                                                    height: 120,
+                                                    objectFit: "cover",
+                                                }}
+                                            />
+                                            <div
+                                                className={styles.actions}
+                                                style={{
+                                                    position: "absolute",
+                                                    inset: 8,
+                                                    display: "flex",
+                                                    justifyContent: "flex-end",
+                                                }}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        removeExistingColorImage(row.id, url)
+                                                    }
+                                                    title="Remove"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                            <div
+                                                className={styles.meta}
+                                                style={{
+                                                    display: "flex",
+                                                    justifyContent: "space-between",
+                                                    padding: "6px 8px",
+                                                    fontSize: 12,
+                                                }}
+                                            >
+                                                <span className={styles.name}>Existing</span>
+                                                <span className={styles.size}>—</span>
+                                            </div>
+                                        </article>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Upload new ones */}
+                            <label
+                                className={styles.dropzoneSmall}
+                                style={{
+                                    display: "grid",
+                                    placeItems: "center",
+                                    padding: 16,
+                                    border: "1px solid var(--border,#4444)",
+                                    borderRadius: 12,
+                                    marginTop: 8,
+                                }}
+                            >
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={(e) => handleColorFilesSelect(row.id, e)}
+                                />
+                                <div className={styles.dzTextSmall}>
+                                    Click to choose images
+                                </div>
+                            </label>
+
+                            <div
+                                className={styles.gallerySmall}
+                                style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                        "repeat(auto-fill, minmax(140px, 1fr))",
+                                    gap: 12,
+                                    marginTop: 12,
+                                }}
+                            >
+                                {row.previews.map((src, i) => {
+                                    const isCover = row.coverIndex === i;
+                                    return (
+                                        <article
+                                            key={src}
+                                            className={styles.tileSmall}
+                                            style={{
+                                                position: "relative",
+                                                border: `2px solid ${isCover ? "var(--accent,#2563eb)" : "transparent"
+                                                    }`,
+                                                borderRadius: 12,
+                                                overflow: "hidden",
+                                                outline: "1px solid var(--border,#4444)",
+                                            }}
+                                        >
+                                            <img
+                                                className={styles.thumb}
+                                                src={src}
+                                                alt={`${row.name}-preview-${i}`}
+                                                style={{
+                                                    width: "100%",
+                                                    height: 120,
+                                                    objectFit: "cover",
+                                                }}
+                                            />
+                                            <div
+                                                className={styles.actions}
+                                                style={{
+                                                    position: "absolute",
+                                                    inset: 8,
+                                                    display: "flex",
+                                                    justifyContent: "space-between",
+                                                    gap: 6,
+                                                }}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCover(row.id, i)}
+                                                    title="Set cover"
+                                                    style={{
+                                                        padding: "4px 8px",
+                                                        borderRadius: 999,
+                                                        border: "none",
+                                                        background: "rgba(0,0,0,0.6)",
+                                                        color: "#fff",
+                                                        fontSize: 12,
+                                                    }}
+                                                >
+                                                    {isCover ? "Cover ✓" : "Set cover"}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeColorFile(row.id, i)}
+                                                    title="Remove"
+                                                    style={{
+                                                        padding: "4px 8px",
+                                                        borderRadius: 999,
+                                                        border: "none",
+                                                        background: "rgba(0,0,0,0.6)",
+                                                        color: "#fff",
+                                                        fontSize: 12,
+                                                    }}
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                            <div
+                                                className={styles.meta}
+                                                style={{
+                                                    display: "flex",
+                                                    justifyContent: "space-between",
+                                                    padding: "6px 8px",
+                                                    fontSize: 12,
+                                                }}
+                                            >
+                                                <span className={styles.name}>{product.title}</span>
+                                                <span className={styles.size}>
+                                                    {formatBytes(row.files[i]?.size || 0)}
+                                                </span>
+                                            </div>
+                                        </article>
+                                    );
+                                })}
+                            </div>
+                        </section>
+                    ))}
                 </div>
 
                 <div className={styles.hr} />
@@ -524,26 +711,48 @@ export default function EditProductModal({ product, onSave, onCancel }: EditModa
                 />
 
                 <label>Details Title</label>
-                <input value={detailsTitle} onChange={(e) => setDetailsTitle(e.target.value)} placeholder="Product Details" />
+                <input
+                    value={detailsTitle}
+                    onChange={(e) => setDetailsTitle(e.target.value)}
+                    placeholder="Product Details"
+                />
 
                 <label>Details (bullets)</label>
                 <div className={styles.detailsList}>
                     {details.map((d, i) => (
                         <div key={i} className={styles.detailRow}>
-                            <input value={d} onChange={(e) => updateDetailAt(i, e.target.value)} placeholder={`Detail #${i + 1}`} />
-                            <button type="button" className={styles.iconBtn} onClick={() => removeDetailAt(i)}>
+                            <input
+                                value={d}
+                                onChange={(e) => updateDetailAt(i, e.target.value)}
+                                placeholder={`Detail #${i + 1}`}
+                            />
+                            <button
+                                type="button"
+                                className={styles.iconBtn}
+                                onClick={() => removeDetailAt(i)}
+                            >
                                 ✕
                             </button>
                         </div>
                     ))}
-                    <button type="button" className={styles.addDetailBtn} onClick={addDetail}>
+                    <button
+                        type="button"
+                        className={styles.addDetailBtn}
+                        onClick={addDetail}
+                    >
                         + Add Detail
                     </button>
                 </div>
 
                 <div className={styles.modalActions}>
-                    <button type="submit" disabled={!canSubmit || loading}>{loading ? "Saving..." : "Save Changes"}</button>
-                    <button type="button" onClick={onCancel} className={styles.secondaryBtn}>
+                    <button type="submit" disabled={!canSubmit || loading}>
+                        {loading ? "Saving..." : "Save Changes"}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className={styles.secondaryBtn}
+                    >
                         Cancel
                     </button>
                 </div>

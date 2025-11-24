@@ -111,7 +111,7 @@ function NavMenu() {
         isOpen={isOpen}
         items={items}
         currency="DT"
-        shipping={5}
+        shipping={8}
         onClose={closeCart}
         onCheckout={() => { navigate("checkout", { state: items }); }}
         onUpdateQty={(id, qty) => updateQty({ id, qty })}

@@ -197,7 +197,10 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       fd.set("price", String(Number(data.price)));
 
       // arrays / objects (as JSON strings)
-      fd.set("categories", JSON.stringify((data.categories || []).map(String)));
+      fd.set(
+        "categories",
+        JSON.stringify((data.categories || []).map(String))
+      );
 
       const sizesPayload = (Array.isArray(data.sizes) ? data.sizes : [])
         .map((s) => ({
@@ -220,7 +223,9 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           intro: String(data.description?.intro ?? "").trim(),
           detailsTitle: String(data.description?.detailsTitle ?? "").trim(),
           details: Array.isArray(data.description?.details)
-            ? data.description.details.map((d) => String(d ?? "").trim()).filter(Boolean)
+            ? data.description.details
+              .map((d) => String(d ?? "").trim())
+              .filter(Boolean)
             : [],
         })
       );
@@ -233,16 +238,8 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           fd.append(`colorFiles[${name}]`, f);
         }
       }
-      // Append files per color name: colorFiles[ColorName]
-      for (const c of colors) {
-        const name = String(c?.name || "").trim();
-        if (!name || !Array.isArray(c?.files)) continue;
-        for (const f of c.files!) {
-          fd.append(`colorFiles[${name}]`, f);
-        }
-      }
 
-      /* 🔎 Debug: log FormData contents (remove in production) */
+      // 🔎 Debug (optional)
       console.groupCollapsed("[createProductMultipart] FormData");
       const fieldCounts: Record<string, number> = {};
       fd.forEach((v, k) => {
@@ -252,12 +249,14 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
             k,
             "→ File:",
             v.name,
-            "| type:", v.type || "file",
-            "| size:", `${v.size}B`
+            "| type:",
+            v.type || "file",
+            "| size:",
+            `${v.size}B`
           );
         } else {
           try {
-            console.log(k, "→", JSON.parse(v)); // pretty-print JSON fields
+            console.log(k, "→", JSON.parse(v as string));
           } catch {
             console.log(k, "→", v);
           }
@@ -266,13 +265,11 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       console.log("Field counts:", fieldCounts);
       console.groupEnd();
 
-
       // IMPORTANT: aligned to POST /products
       const res = await api.post<Product>("/products/create", fd, {
         headers: { "Content-Type": "multipart/form-data" },
         transformRequest: [(d) => d],
         timeout: 45000,
-        onUploadProgress: (e) => console.log("upload", e.loaded, "/", e.total ?? "unknown"),
       });
 
       const created = res.data;
@@ -289,6 +286,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+
   /* ---------------------- UPDATE (JSON only) ---------------------- */
   const updateProduct = async (id: string, data: UpdateProductInput) => {
     dispatch({ type: "START" });
@@ -304,20 +302,32 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   };
 
   /* -------------------- UPDATE (multipart full) ------------------- */
-  const updateProductMultipart = async (id: string, data: UpdateProductMultipart) => {
+  const updateProductMultipart = async (
+    id: string,
+    data: UpdateProductMultipart
+  ) => {
     dispatch({ type: "START" });
+
     try {
       const fd = new FormData();
 
-      // Only set fields that are provided (backend treats missing as "no change")
-      if (data.title != null) fd.set("title", String(data.title).trim());
-      if (data.price != null) fd.set("price", String(Number(data.price)));
-
-      if (data.categories) {
-        fd.set("categories", JSON.stringify(data.categories.map(String)));
+      // primitives
+      if (data.title !== undefined && data.title !== null) {
+        fd.set("title", String(data.title).trim());
       }
-      if (data.sizes) {
-        const sizesPayload = data.sizes
+      if (data.price !== undefined && data.price !== null) {
+        fd.set("price", String(Number(data.price)));
+      }
+
+      // categories: only send if provided
+      if (data.categories !== undefined) {
+        const cats = (data.categories || []).map((c) => String(c));
+        fd.set("categories", JSON.stringify(cats));
+      }
+
+      // sizes: only send if provided
+      if (data.sizes !== undefined) {
+        const sizesPayload = (data.sizes || [])
           .map((s) => ({
             name: String(s?.name ?? "").trim(),
             stock: Math.max(0, Number(s?.stock ?? 0)),
@@ -325,33 +335,54 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           .filter((s) => s.name);
         fd.set("sizes", JSON.stringify(sizesPayload));
       }
-      if (data.colors) {
-        const colorNames = data.colors.map((c) => String(c || "").trim()).filter(Boolean);
+
+      // colors: array of names only
+      if (data.colors !== undefined) {
+        const colorNames = (data.colors || [])
+          .map((c) => String(c || "").trim())
+          .filter(Boolean);
         fd.set("colors", JSON.stringify(colorNames));
       }
-      if (data.description) {
+
+      // description
+      if (data.description !== undefined) {
         fd.set(
           "description",
           JSON.stringify({
             intro: String(data.description.intro ?? "").trim(),
             detailsTitle: String(data.description.detailsTitle ?? "").trim(),
             details: Array.isArray(data.description.details)
-              ? data.description.details.map((d) => String(d ?? "").trim()).filter(Boolean)
+              ? data.description.details
+                .map((d) => String(d ?? "").trim())
+                .filter(Boolean)
               : [],
           })
         );
       }
-      if (data.removeImages) {
-        fd.set("removeImages", JSON.stringify(data.removeImages));
+
+      // removeImages: JSON { [colorName]: [url, ...] }
+      if (data.removeImages !== undefined) {
+        fd.set("removeImages", JSON.stringify(data.removeImages || {}));
       }
-      if (data.colorFiles) {
-        // If colors provided, we’ll use that order; otherwise append for whatever keys exist
-        const keys =
-          data.colors?.map((n) => String(n).trim()).filter(Boolean) ||
-          Object.keys(data.colorFiles);
-        for (const name of keys) {
-          const files = data.colorFiles[name] || [];
-          files.forEach((f) => fd.append(`colorFiles[${name}]`, f));
+
+      // colorFiles: Record<colorName, File[]>
+      if (data.colorFiles !== undefined) {
+        const colorFiles = data.colorFiles;
+
+        // If colors were provided, respect that order; otherwise use keys from colorFiles
+        const orderedNames =
+          data.colors && data.colors.length
+            ? data.colors.map((n) => String(n).trim()).filter(Boolean)
+            : Object.keys(colorFiles);
+
+        for (const rawName of orderedNames) {
+          const name = String(rawName || "").trim();
+          if (!name) continue;
+
+          const files = colorFiles[name] || [];
+          for (const f of files) {
+            fd.append(`colorFiles[${name}]`, f);
+          }
         }
       }
 
@@ -359,16 +390,20 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         headers: { "Content-Type": "multipart/form-data" },
         transformRequest: [(d) => d],
         timeout: 45000,
-        onUploadProgress: (e) => console.log("upload", e.loaded, "/", e.total ?? "unknown"),
+        onUploadProgress: (e) =>
+          console.log("upload", e.loaded, "/", e.total ?? "unknown"),
       });
+
       dispatch({ type: "UPDATE_PRODUCT", payload: res.data });
       return res.data;
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err.message || "Failed to update product";
+      const msg =
+        err?.response?.data?.message || err.message || "Failed to update product";
       dispatch({ type: "ERROR", payload: msg });
       throw new Error(msg);
     }
   };
+
 
   const deleteProduct = async (id: string) => {
     dispatch({ type: "START" });

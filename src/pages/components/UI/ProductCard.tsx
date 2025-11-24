@@ -111,7 +111,7 @@ export default function ProductCard({
                 )}
 
                 {cta === "none" && (
-                    <span className={styles.productCard__price}>{price}</span>
+                    <span className={styles.productCard__price}>{price} TND</span>
                 )}
             </footer>
         </article>

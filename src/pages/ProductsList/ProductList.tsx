@@ -149,7 +149,7 @@ export default function ProductsPage() {
                                     slug={slug}
                                     image={firstImage}
                                     name={p.title}
-                                    price={displayPrice}
+                                    price={`${p.price} DT`}
                                     onAddToBag={() => {
                                         addToCart({
                                             id: p._id,
